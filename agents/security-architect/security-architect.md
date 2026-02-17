@@ -100,7 +100,7 @@ When team mode is triggered, you orchestrate the entire assessment using Claude 
    mkdir -p {project_root}/threat-model-output
    ```
 
-3. **Perform Phase 1 (Reconnaissance)** of the threat-model skill yourself. Save to `{output_dir}/01-reconnaissance.md`.
+3. **Perform Phase 1 (Reconnaissance)** of the threat-model skill yourself. This now includes filling out the visual completeness checklist (Phase 1.9) — mark which of the 20 visual categories are applicable based on reconnaissance observations. Save the checklist to `{output_dir}/visual-completeness-checklist.md` and reconnaissance to `{output_dir}/01-reconnaissance.md`.
 
 4. **Determine which agents to spawn** based on reconnaissance findings (see "Deciding Solo vs Team" and "When to Use the Team" sections above).
 
@@ -108,12 +108,13 @@ When team mode is triggered, you orchestrate the entire assessment using Claude 
 
 After reconnaissance, create tasks, wire up dependencies, assign owners, and spawn agents. **Critical: spawn all specialist agents in a SINGLE message with multiple Task tool calls** so they run concurrently.
 
-**Step 1 — Create tasks** (4 sequential TaskCreate calls):
+**Step 1 — Create tasks** (5 sequential TaskCreate calls):
 
 ```
 TaskCreate(
   subject="Perform privacy impact assessment",
   description="Analyze {project} for privacy risks. Read reconnaissance at {output_dir}/01-reconnaissance.md.
+    Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md.
     Write PIA to {output_dir}/privacy-assessment.md.
     Include: data inventory, LINDDUN analysis, regulatory implications, privacy-specific recommendations.",
   activeForm="Performing privacy impact assessment"
@@ -123,6 +124,7 @@ TaskCreate(
 TaskCreate(
   subject="Perform compliance gap analysis",
   description="Analyze {project} for compliance gaps. Read reconnaissance at {output_dir}/01-reconnaissance.md.
+    Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md.
     Write report to {output_dir}/compliance-gap-analysis.md.
     Also produce {output_dir}/control-matrix.xlsx with detailed control mapping.
     Include: framework coverage, control mapping, gap analysis, remediation roadmap.",
@@ -133,6 +135,7 @@ TaskCreate(
 TaskCreate(
   subject="Perform code security review",
   description="Review high-risk components identified in {output_dir}/01-reconnaissance.md.
+    Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md.
     Focus on: {list top 3-5 high-risk files from recon}.
     Write findings to {output_dir}/code-security-review.md.
     Use CVSS v3.1 scoring. Include code evidence for every finding.",
@@ -144,16 +147,39 @@ TaskCreate(
   subject="QA review and consolidated report generation",
   description="After all other agents complete, consolidate all outputs into final reports in FOUR formats (HTML, DOCX, PDF, PPTX).
     Read the report template at ~/.claude/skills/threat-model/report-template.md first.
-    Follow the template exactly for section ordering and structure.",
+    Follow the template exactly for section ordering and structure.
+    Include validation-report.md findings in consolidation.",
   activeForm="Generating consolidated reports"
 )
 → returns task ID (e.g., "4")
+
+TaskCreate(
+  subject="Cross-validate specialist findings",
+  description="Read all specialist outputs. Deduplicate findings across agents.
+    Verify false positive candidates. Check visual completeness against checklist.
+    Resolve severity conflicts. Send corrections via SendMessage.
+    Write validation-report.md.
+    Follow ~/.claude/skills/threat-model/references/agent-output-protocol.md for format.",
+  activeForm="Validating specialist findings"
+)
+→ returns task ID (e.g., "5")
 ```
 
-**Step 2 — Set dependencies** (Task 4 cannot start until Tasks 1-3 complete):
+**Step 2 — Set dependencies**:
 
 ```
-TaskUpdate(taskId="4", addBlockedBy=["1", "2", "3"])
+# Task 5 (validation) blocked by specialists completing
+TaskUpdate(taskId="5", addBlockedBy=["1", "2", "3"])
+
+# Task 4 (report) blocked by both specialists AND validation
+TaskUpdate(taskId="4", addBlockedBy=["1", "2", "3", "5"])
+```
+
+**New task dependency chain:**
+```
+Task 1 (privacy)     ─┐
+Task 2 (compliance)   ├─→ Task 5 (validation) ──→ Task 4 (report)
+Task 3 (code-review) ─┘
 ```
 
 **Step 3 — Assign owners** matching the agent names you will spawn:
@@ -163,6 +189,7 @@ TaskUpdate(taskId="1", owner="privacy-specialist")
 TaskUpdate(taskId="2", owner="compliance-specialist")
 TaskUpdate(taskId="3", owner="code-security-specialist")
 TaskUpdate(taskId="4", owner="report-generator")
+TaskUpdate(taskId="5", owner="validation-specialist")
 ```
 
 **Step 4 — Spawn all 3 specialist agents in a SINGLE message** (parallel execution):
@@ -237,15 +264,12 @@ While specialist agents work their tasks concurrently, you continue with your ow
    Then spawn a replacement agent with the same prompt.
 7. **Do NOT wait** for specialist agents before doing your own threat modeling — your Phases 2-8 run in parallel with them.
 
-### Phase D: Verify Completion, Then Spawn Report-Analyst
+### Phase D: Verify Specialist Completion
 
-**Sequencing is critical here.** The report-analyst MUST run last because it needs all other outputs.
-
-1. **Check TaskList** — all prerequisite tasks (1, 2, 3) must show `status: "completed"`:
+1. **Check TaskList** — specialist tasks (1, 2, 3) must show `status: "completed"`:
    ```
    TaskList()
    # Verify: Task 1 completed, Task 2 completed, Task 3 completed
-   # Task 4 should now be unblocked (blockedBy list empty)
    ```
 
 2. **Verify your own threat model phases 1-8 are complete** and saved to `{output_dir}/`.
@@ -255,11 +279,76 @@ While specialist agents work their tasks concurrently, you continue with your ow
    ls -la {output_dir}/01-reconnaissance.md {output_dir}/02-structural-diagram.md \
      {output_dir}/03-threat-identification.md {output_dir}/04-risk-quantification.md \
      {output_dir}/05-false-negative-hunting.md {output_dir}/06-validated-findings.md \
-     {output_dir}/07-final-diagram.md {output_dir}/08-threat-model-report.md
+     {output_dir}/07-final-diagram.md {output_dir}/08-threat-model-report.md \
+     {output_dir}/visual-completeness-checklist.md
    # Also check optional team outputs:
    ls -la {output_dir}/privacy-assessment.md {output_dir}/compliance-gap-analysis.md \
      {output_dir}/code-security-review.md 2>/dev/null
    ```
+
+### Phase D.5: Spawn Validation-Specialist
+
+**After all specialists complete but BEFORE report-analyst.** The validation-specialist cross-validates all outputs, deduplicates findings, and sends corrections to specialists.
+
+1. **Update Task 5 to in_progress and spawn validation-specialist**:
+   ```
+   TaskUpdate(taskId="5", status="in_progress")
+   ```
+
+   Then spawn:
+   ```
+   Task(
+     subagent_type="validation-specialist",
+     team_name="security-assessment",
+     name="validation-specialist",
+     prompt="You are the validation specialist in a security assessment team.
+       TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
+       TASK AWARENESS: Call TaskList, find your task (Task 5), TaskUpdate(taskId=YOUR_TASK, status='in_progress').
+
+       Read ALL specialist outputs in {output_dir}/:
+       - 01-08 threat model phases (from security-architect)
+       - privacy-assessment.md (from privacy-specialist)
+       - compliance-gap-analysis.md (from compliance-specialist)
+       - code-security-review.md (from code-security-specialist)
+
+       Read the visual completeness checklist:
+       {output_dir}/visual-completeness-checklist.md
+
+       Read the agent output protocol:
+       ~/.claude/skills/threat-model/references/agent-output-protocol.md
+
+       Read framework references:
+       ~/.claude/skills/threat-model/references/frameworks.md
+
+       Read mermaid conventions:
+       ~/.claude/skills/threat-model/references/mermaid-conventions.md
+
+       PERFORM VALIDATION:
+       1. Cross-agent finding deduplication
+       2. False positive detection (CRITICAL/HIGH findings)
+       3. Severity consistency across agents
+       4. Visual completeness verification (20 categories against diagrams)
+       5. Framework ID verification against references/frameworks.md
+       6. Confidence escalation for independently-flagged issues
+       7. Agent output protocol compliance check
+
+       FEEDBACK LOOPS: If you find critical issues, SendMessage the responsible agent
+       with specific corrections. Wait for response. Max 2 rounds per finding.
+
+       Write {output_dir}/validation-report.md with all findings.
+       The project root is {project_root}.
+
+       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Validation complete', content='Validation report written to {output_dir}/validation-report.md. [summary of key findings]')."
+   )
+   ```
+
+2. **Wait for validation-specialist to complete** (Task 5 status → completed).
+
+3. **Read validation-report.md** (compact summary) to understand what was corrected. Do NOT read raw specialist outputs — the validation report provides the quality summary you need. This prevents context rot from ingesting all specialist outputs.
+
+### Phase D.6: Spawn Report-Analyst
+
+**After validation completes.** Task 4 should now be unblocked.
 
 4. **Update Task 4 to in_progress and spawn report-analyst**:
    ```
@@ -299,6 +388,8 @@ While specialist agents work their tasks concurrently, you continue with your ow
        - compliance-gap-analysis.md (from grc-agent)
        - code-security-review.md (from code-review-agent)
        - control-matrix.xlsx (from grc-agent)
+       - validation-report.md (from validation-specialist — cross-agent validation results)
+       - visual-completeness-checklist.md (filled out by security-architect)
 
        GENERATE ALL FOUR FORMATS:
        1. report.html — interactive web report with inline Mermaid diagrams, sidebar nav, severity filtering, diagram zoom/fullscreen
@@ -331,6 +422,7 @@ After the report-analyst completes and you've communicated results to the user:
    SendMessage(type="shutdown_request", recipient="privacy-specialist", content="Assessment complete, shutting down team.")
    SendMessage(type="shutdown_request", recipient="compliance-specialist", content="Assessment complete, shutting down team.")
    SendMessage(type="shutdown_request", recipient="code-security-specialist", content="Assessment complete, shutting down team.")
+   SendMessage(type="shutdown_request", recipient="validation-specialist", content="Assessment complete, shutting down team.")
    SendMessage(type="shutdown_request", recipient="report-generator", content="Assessment complete, shutting down team.")
    ```
 
@@ -356,20 +448,26 @@ After the report-analyst completes and you've communicated results to the user:
 ### Execution Summary — Sequencing Diagram
 
 ```
-Phase A: You (reconnaissance + TeamCreate + output dir)
+Phase A: You (reconnaissance + visual checklist + TeamCreate + output dir)
     │
     ▼
-Phase B: TaskCreate x4 → TaskUpdate(addBlockedBy) → TaskUpdate(owners) → Spawn in PARALLEL ─┬─ privacy-agent
+Phase B: TaskCreate x5 → TaskUpdate(addBlockedBy) → TaskUpdate(owners) → Spawn in PARALLEL ─┬─ privacy-agent
     │                                                                                        ├─ grc-agent
     │                                                                                        └─ code-review-agent
     │
 Phase C: You (phases 2-8) + TaskList polling  ← runs IN PARALLEL with Phase B agents
     │
     ▼
-Phase D: TaskList (verify all completed) → ls (verify files) → spawn report-analyst (SEQUENTIAL — must be last)
+Phase D: TaskList (verify specialists completed) → ls (verify files)
     │
     ▼
-Phase E: SendMessage(shutdown_request) x4 → wait for confirmations → TeamDelete → report to user
+Phase D.5: Spawn validation-specialist → wait for completion → read validation-report.md
+    │
+    ▼
+Phase D.6: Spawn report-analyst (SEQUENTIAL — must be last)
+    │
+    ▼
+Phase E: SendMessage(shutdown_request) x5 → wait for confirmations → TeamDelete → report to user
 ```
 
 ## Solo Mode Report Generation
@@ -467,6 +565,8 @@ All outputs go to `{project_root}/threat-model-output/` unless the user specifie
 - `privacy-assessment.md` (from privacy-agent, if spawned)
 - `compliance-gap-analysis.md` (from grc-agent, if spawned)
 - `code-security-review.md` (from code-review-agent, if spawned)
+- `visual-completeness-checklist.md` (filled out during Phase 1, updated in Phase 7)
+- `validation-report.md` (from validation-specialist — cross-agent validation results)
 - `quality-review.md` (from report-analyst QA pass, if spawned)
 - `consolidated-report.md` (unified markdown — from report-analyst consolidation)
 - `report.html` (interactive web report — from report-analyst)

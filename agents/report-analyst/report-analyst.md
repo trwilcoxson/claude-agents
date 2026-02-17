@@ -337,6 +337,8 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 | `compliance-gap-analysis.md` | grc-agent | Framework mapping, control gaps | Section X (Compliance Mapping) |
 | `code-security-review.md` | code-review-agent | Code-level vulnerabilities, CVSS scores | Merged into Section VII (Findings) |
 | `control-matrix.xlsx` | grc-agent | Spreadsheet control matrix | Referenced from Section X |
+| `validation-report.md` | validation-specialist | Cross-agent validation results: deduplication log, false positive candidates, severity conflicts, visual completeness gaps, framework ID corrections, confidence escalations | Section XIV Appendix C (alongside QA corrections) + applied throughout all sections |
+| `visual-completeness-checklist.md` | security-architect | 20-category visual completeness checklist with applicability and completion status | Section III and IV diagram validation |
 | `quality-review.md` | prior QA pass | QA issues found | Section XIV Appendix C |
 
 **Handling missing optional inputs:**
@@ -357,6 +359,16 @@ When presenting findings from multiple sources in a unified table, include a **S
 ### Step 1: QA Pass
 
 Before consolidating, run your full review methodology against all discovered input files. Fix any critical issues inline during consolidation. Log what you fixed in the report's appendix (Section XIV-C).
+
+**Visual completeness check**: Read the visual completeness checklist from `{output_dir}/visual-completeness-checklist.md`. Verify the final diagrams (Phase 2 structural + Phase 7 risk overlay) include all applicable categories. Flag any gaps the validation-specialist may have missed.
+
+**Validation integration**: If `validation-report.md` exists, read it and apply all corrections:
+- Apply deduplication decisions (merged findings use the consolidated version)
+- Apply severity conflict resolutions
+- Apply framework ID corrections
+- Apply confidence escalations
+- Note false positive candidates in the findings (mark them for the reader's awareness)
+- Include the validation summary in Appendix C
 
 ### Step 2: Consolidation
 
@@ -525,6 +537,8 @@ After generating `consolidated-report.md` and before proceeding to Step 3, verif
 - [ ] **Scoring systems preserved**: Findings from different sources retain their original scoring system (OWASP vs CVSS vs qualitative) — no cross-conversion
 - [ ] **Glossary completeness**: All acronyms used in the report are defined in Appendix D
 - [ ] **Methodology notes**: Appendix A includes all scoring methodologies used in the report
+- [ ] **Visual completeness**: All applicable categories from the visual completeness checklist are represented in both diagrams (Sections III and IV)
+- [ ] **Validation integration**: All corrections from `validation-report.md` (if present) are applied to the consolidated report — deduplication, severity resolutions, framework ID fixes, confidence escalations
 
 ### Step 3: Multi-Format Generation
 

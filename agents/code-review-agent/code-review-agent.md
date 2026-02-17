@@ -61,6 +61,8 @@ Self-review all proposed fixes: verify they don't introduce new vulnerabilities,
 
 ## Output Format
 
+> **MANDATORY**: Follow the standardized output protocol at `~/.claude/skills/threat-model/references/agent-output-protocol.md`. All findings MUST use the `CR-` prefix, include the standardized finding format (Metadata table, Description, Evidence, Attack Scenario, Existing Mitigations, Recommendation), and specify CVSS v3.1 as the scoring system. The validation-specialist will verify compliance.
+
 ### Code Security Review Report
 
 **1. Executive Summary**

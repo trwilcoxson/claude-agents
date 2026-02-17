@@ -157,6 +157,8 @@ When the system includes AI/ML components, assess: training data consent and leg
 
 ## Output Format
 
+> **MANDATORY**: Follow the standardized output protocol at `~/.claude/skills/threat-model/references/agent-output-protocol.md`. All findings MUST use the `PA-` prefix, include the standardized finding format (Metadata table, Description, Evidence, Attack Scenario, Existing Mitigations, Recommendation), and specify Qualitative (LINDDUN-based) as the scoring system. The validation-specialist will verify compliance.
+
 ### Privacy Assessment Report
 
 **1. Executive Summary**
