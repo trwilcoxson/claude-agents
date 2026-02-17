@@ -1,5 +1,17 @@
 # Agent Output Protocol
 
+## Contents
+- Purpose
+- Required Document Structure (Metadata, Summary, Findings, Observations, Assumptions, Cross-References)
+- Standardized Finding Format
+- Agent-Specific Prefixes (TM-, CR-, PA-, GRC-, VS-)
+- Severity Definitions (OWASP Risk Rating, CVSS v3.1, Qualitative)
+- Confidence Levels (HIGH, MEDIUM, LOW)
+- Cross-Reference Requirements
+- File Naming Convention
+- Validation Rules
+- Example Output Snippet
+
 ## Purpose
 
 This protocol defines the standardized output format for all specialist agents in the security assessment pipeline. Following this format ensures:

@@ -1,7 +1,6 @@
 ---
 name: threat-model
 description: Produces an architectural threat model with Mermaid data flow diagrams, STRIDE-LM threat identification, PASTA attack simulation, and OWASP Risk Rating prioritization. Use when the user asks for a threat model, threat analysis, security architecture review, attack surface analysis, data flow diagram (DFD), or asks to analyze an architecture or system design for security risks.
-argument-hint: [architecture diagram, codebase path, or system description]
 ---
 
 # Threat Modeling Skill
@@ -11,6 +10,14 @@ You are performing an architectural threat model. This skill complements the `se
 Follow all eight phases sequentially. Consult the reference files in `references/` throughout. Save intermediate outputs to files when analyzing systems with more than 10 components or when context length is a concern. Always offer to save to files.
 
 Define `{output_dir}` as `{project_root}/threat-model-output/` unless the user specifies a different location. Create the directory if it does not exist.
+
+## Reference Files
+- **Diagram conventions**: [references/mermaid-conventions.md](references/mermaid-conventions.md) — shapes, classDefs, two-pass approach, 20 visual categories
+- **Frameworks**: [references/frameworks.md](references/frameworks.md) — STRIDE-LM, PASTA, OWASP Risk Rating, MITRE ATT&CK, CWE groups, LINDDUN
+- **Checklists**: [references/analysis-checklists.md](references/analysis-checklists.md) — per-phase completeness checklists (copy and check off as you go)
+- **Visual completeness**: [references/visual-completeness-checklist.md](references/visual-completeness-checklist.md) — 20-category diagram coverage tracker
+- **Report template**: [references/report-template.md](references/report-template.md) — exact section structure, table formats, and cross-reference rules for Phase 8
+- **Agent output protocol**: [references/agent-output-protocol.md](references/agent-output-protocol.md) — standardized finding format for team assessments
 
 ## Phase 1 — Reconnaissance
 
@@ -60,21 +67,12 @@ Produce a Mermaid flowchart Data Flow Diagram that accurately represents the arc
 
 Consult [references/mermaid-conventions.md](references/mermaid-conventions.md) for structural diagram conventions.
 
-1. Read the completed visual completeness checklist from `{output_dir}/visual-completeness-checklist.md`. For every category marked applicable, ensure it appears in the structural diagram using the conventions from `references/mermaid-conventions.md`.
-2. Draw every process, data store, and external entity discovered in Phase 1.
-3. Group components within trust boundary subgraphs using dashed styling.
-4. Label every data flow with protocol, data type, and sensitivity level.
-5. Use **neutral styling** for all components — apply only the `external` and `dataStore` classDefs for type distinction. Do NOT apply `highRisk`, `medRisk`, or `lowRisk` classes yet.
-6. For applicable extended categories, use the appropriate shapes and classDefs: `:::identity` for IAM/service accounts, `:::secrets` for vaults/KMS, `:::control` for security controls, `:::pipeline` for CI/CD, `:::externalDep` for third-party dependencies, `:::outOfScope` for out-of-scope components.
-7. Use `-.->` dashed arrows with `[CP]` prefix for control plane flows, `-->` solid arrows with `[DP]` prefix for data plane flows (if control/data plane distinction is applicable).
-8. Add network zone subgraphs with CIDR annotations (if applicable).
-9. Add tenant boundary and region boundary subgraphs (if applicable).
-10. Add data classification zone coloring (if applicable).
-11. Add encryption state indicators (`[ENC]`/`[PLAIN]`) to data flow labels (if applicable).
-12. Add component metadata notes (tech stack, auth mechanism, encryption, rate limits).
-13. Do NOT add threat annotation notes yet.
-14. Include the structural legend from `mermaid-conventions.md` reflecting all applicable component types.
-15. Validate Mermaid syntax mentally before outputting — avoid common pitfalls listed in the conventions reference.
+1. Read the completed visual completeness checklist from `{output_dir}/visual-completeness-checklist.md`.
+2. Draw every process, data store, and external entity discovered in Phase 1. Group within trust boundary subgraphs. Label every data flow with protocol, data type, and sensitivity.
+3. Use **neutral styling** only — `:::neutral`, `:::external`, `:::dataStore`. Do NOT apply risk classes yet.
+4. For every applicable category in the visual completeness checklist, apply the corresponding shapes and classDefs from [references/mermaid-conventions.md](references/mermaid-conventions.md) (identity elements, secrets, control/data plane, network zones, tenant/region boundaries, data classification, encryption state, deployment pipeline, external dependencies, control indicators, out-of-scope markers).
+5. Add component metadata notes. Do NOT add threat annotation notes yet.
+6. Include the structural legend and validate Mermaid syntax — see Common Pitfalls in the conventions reference.
 
 Output the diagram in a fenced code block with `mermaid` language tag.
 
@@ -256,7 +254,7 @@ Produce the final corrected Mermaid diagram in a fenced code block.
 
 ## Phase 8 — Final Report
 
-Produce the complete threat model report with the following sections.
+Produce the complete threat model report. Follow the exact structure and table formats in [references/report-template.md](references/report-template.md) — it defines section ordering, required elements per section, table column headers, cross-reference integrity rules, and diagram placement rules.
 
 ### Report Structure
 

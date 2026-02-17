@@ -1,5 +1,25 @@
 # Consolidated Security Assessment Report Template
 
+## Contents
+- Usage Instructions
+- Section I: Executive Summary (posture rating, finding counts, top 3 risks, key metrics, quick wins)
+- Section II: System Overview (purpose, scope, tech stack, deployment model)
+- Section III: Architecture Diagram — Structural (rendered diagram, component metadata, trust boundaries, network topology)
+- Section IV: Risk Overlay Diagram (rendered diagram, component risk mapping, critical data flows)
+- Section V: Asset Inventory (data assets, data flow summary)
+- Section VI: Threat Actor Profiles
+- Section VII: Findings (ordered by severity, standardized format)
+- Section VIII: Remediation Roadmap (waves, dependencies, quick wins)
+- Section IX: Networking & Infrastructure Data (VPC, subnets, security groups, IAM)
+- Section X: Compliance Mapping (conditional — if compliance-gap-analysis.md exists)
+- Section XI: Privacy Assessment (conditional — if privacy-assessment.md exists)
+- Section XII: Positive Observations
+- Section XIII: Assumptions & Limitations
+- Section XIV: Appendices (methodology, framework reference, QA log, glossary, lifecycle triggers)
+- Diagram Placement Rules
+- Table Consistency Rules
+- Cross-Reference Integrity Rules
+
 This template defines the **exact structure** for every consolidated report. Follow it precisely — do not reorder, rename, or omit sections (except where conditional markers indicate). This ensures deterministic, diff-comparable output across runs.
 
 ## Usage

@@ -1,5 +1,11 @@
 # Visual Completeness Checklist
 
+## Contents
+- Instructions
+- Checklist (20 categories): External Entities, Processes, Data Stores, Trust Boundaries, Data Flow Labels, Risk Color Coding, Threat Annotations, Component Metadata, Identity Elements, Secrets/Key Mgmt, Control/Data Plane, Attack Paths, Control Indicators, Data Classification, Encryption State, Network Zones, Deployment Pipeline, External Dependencies, Tenant Boundaries, Region Boundaries
+- Applicability Guide (by architecture type)
+- Summary Scorecard
+
 This checklist ensures all applicable visual categories defined in `mermaid-conventions.md` are represented in threat model diagrams. It is used by the **security-architect** during Phase 1 (applicability assessment), Phase 2 (structural diagram construction), and Phase 7 (risk overlay augmentation), and is verified by the **validation-specialist** after all analysis completes.
 
 Every threat model diagram should be audited against these 20 meta-categories. Categories that do not apply to the target system must be explicitly marked with a justification so reviewers can distinguish intentional omissions from oversights.

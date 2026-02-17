@@ -1,5 +1,21 @@
 # Mermaid Diagram Conventions for Threat Models
 
+## Contents
+- Component Shapes
+- Two-Pass Diagram Approach (Pass 1 Structural, Pass 2 Risk Overlay)
+- Trust Boundaries
+- Data Flow Labels
+- Arrow Syntax Reference
+- Color Coding with classDef
+- Threat Annotations
+- Component Metadata
+- Diagram Legends (Structural, Risk-Overlay)
+- Full Example
+- Extended Visual Categories (Identity, Secrets, Control/Data Plane, Attack Paths, Control Indicators, Data Classification, Encryption State, Network Zones, Deployment Pipeline, External Dependencies, Tenant Boundaries, Region Boundaries, Assumptions/Scope)
+- Network Zones (detailed)
+- Category Applicability Guide
+- Common Pitfalls
+
 ## Component Shapes
 
 Use consistent shapes to distinguish component types at a glance.
