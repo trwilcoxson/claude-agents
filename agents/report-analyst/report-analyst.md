@@ -502,20 +502,28 @@ XIV. APPENDICES
    - From `02-structural-diagram.md`: extract the Mermaid code block → save as `{output_dir}/structural-diagram.mmd`
    - From `07-final-diagram.md`: extract the Mermaid code block → save as `{output_dir}/risk-overlay-diagram.mmd`
 
-2. **Render to PNG** using the Mermaid CLI:
+2. **Pre-process .mmd files before rendering**: Strip elements that cause rendering failures:
+   - Remove `~~>` wavy arrows (not valid in standard Mermaid flowcharts) — replace with comments
+   - Remove `note` directives (not valid in flowchart mode)
+   - Ensure no unescaped special characters in labels
+
+3. **Render to PNG** using the Mermaid CLI (**DO NOT use `mmdc` as a subcommand** — the CLI is invoked directly):
    ```bash
-   npx -y @mermaid-js/mermaid-cli mmdc -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white
-   npx -y @mermaid-js/mermaid-cli mmdc -i {output_dir}/risk-overlay-diagram.mmd -o {output_dir}/risk-overlay-diagram.png -w 2000 -b white
+   npx -y @mermaid-js/mermaid-cli -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white
+   npx -y @mermaid-js/mermaid-cli -i {output_dir}/risk-overlay-diagram.mmd -o {output_dir}/risk-overlay-diagram.png -w 2000 -b white
    ```
 
-3. **Verify PNGs exist and are non-empty**:
+4. **Verify PNGs exist and are non-empty** (must be >100 bytes — 67 bytes means placeholder):
    ```bash
-   test -s {output_dir}/structural-diagram.png && test -s {output_dir}/risk-overlay-diagram.png && echo "OK" || echo "FAIL"
+   for f in structural-diagram.png risk-overlay-diagram.png; do
+     size=$(wc -c < {output_dir}/$f); [ "$size" -gt 100 ] && echo "OK: $f ($size bytes)" || echo "FAIL: $f ($size bytes)"
+   done
    ```
 
-4. **If rendering fails**: Check for Mermaid syntax errors in the `.mmd` files. Common issues:
+5. **If rendering fails**: Check for Mermaid syntax errors in the `.mmd` files. Common issues:
+   - `~~>` wavy arrows (not valid — use `==>` thick arrows or comments instead)
+   - `note` directives (not valid in flowchart — remove or use comments)
    - Unescaped special characters in labels (quotes, brackets)
-   - Missing semicolons or arrow syntax errors
    - Subgraph nesting depth exceeding renderer limits
    Fix the `.mmd` file and retry. Do NOT proceed to Step 3 until both PNGs render successfully.
 
