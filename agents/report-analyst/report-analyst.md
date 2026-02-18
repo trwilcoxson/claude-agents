@@ -100,13 +100,17 @@ A threat model score of 15 and a code review score of 7.5 are not equivalent -- 
 - Edge directionality reflects actual data flow direction
 - External systems are visually distinguished from internal components
 
-**Two-Pass Compliance** (for threat model diagrams):
-- **Pass 1 (structural diagram)**: Uses neutral styling, no risk colors, no threat annotations. Purpose is to establish the baseline architecture.
-- **Pass 2 (risk overlay diagram)**: Risk colors applied based on validated findings. Threat annotations present. Verify:
+**Layer Compliance** (for threat model diagrams):
+- **L1-L3 (structural layers)**: Use neutral styling only — no risk colors, no threat annotations. L1 = architecture topology, L2 = trust & identity, L3 = data classification. Purpose is to establish the baseline architecture.
+- **L4 (threat overlay)**: Risk colors applied based on validated findings. Machine-parseable threat annotations present. Verify:
   - `noFindings` style (gray/neutral) is distinct from `lowRisk` style (green or cool color)
   - Every node with findings has the correct risk color matching its highest-severity finding
-  - Nodes explicitly assessed with no findings use `noFindings`, not `lowRisk`
-  - Threat labels on edges or nodes reference valid finding IDs from the report
+  - Nodes explicitly assessed with no findings use `:::noFindings`, not `:::lowRisk`
+  - Enriched node labels follow format: `Name\nTech\n⚠ STRIDE · LxI=Score BAND\nCWE IDs`
+  - Attack path overlays (`==>` with red linkStyle) appear only in L4
+  - Threat labels reference valid finding IDs from the report
+- **Small systems (≤5 components)**: 2-layer (L1+L4) acceptable per mermaid-layers.md §6
+- **Companion diagrams**: Auth sequence diagram (if AuthN/AuthZ present), attack tree diagrams (if ≥3 kill chains)
 
 **Data Flow Labels**:
 - Every arrow should be labeled with protocol, data type, and sensitivity: e.g., "HTTPS: auth token [CONFIDENTIAL]"
@@ -338,7 +342,7 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 | `code-security-review.md` | code-review-agent | Code-level vulnerabilities, CVSS scores | Merged into Section VII (Findings) |
 | `control-matrix.xlsx` | grc-agent | Spreadsheet control matrix | Referenced from Section X |
 | `validation-report.md` | validation-specialist | Cross-agent validation results: deduplication log, false positive candidates, severity conflicts, visual completeness gaps, framework ID corrections, confidence escalations | Section XIV Appendix C (alongside QA corrections) + applied throughout all sections |
-| `visual-completeness-checklist.md` | security-architect | 20-category visual completeness checklist with applicability and completion status | Section III and IV diagram validation |
+| `visual-completeness-checklist.md` | security-architect | 26-category visual completeness checklist with applicability and completion status | Section III and IV diagram validation |
 | `quality-review.md` | prior QA pass | QA issues found | Section XIV Appendix C |
 
 **Handling missing optional inputs:**
@@ -500,11 +504,14 @@ XIV. APPENDICES
 
 **You have Bash access — use it to render diagrams directly.**
 
-**IMPORTANT**: Read the diagram conventions at `~/.claude/skills/threat-model/references/mermaid-conventions.md` — specifically the **Rendering Configuration** section and the **Diagram Design Principles** section. The rendering config at `~/.claude/skills/threat-model/references/mermaid-config.json` provides the professional theme (fonts, spacing, curves) that makes diagrams look polished.
+**IMPORTANT**: Read the diagram spec at `~/.claude/skills/threat-model/references/mermaid-spec.md` — specifically §2 (Rendering Config) and §1 (Design Principles). The rendering config at `~/.claude/skills/threat-model/references/mermaid-config.json` provides the professional theme (fonts, spacing, curves) that makes diagrams look polished.
 
 1. **Extract Mermaid code** from phase files:
-   - From `02-structural-diagram.md`: extract the Mermaid code block → save as `{output_dir}/structural-diagram.mmd`
-   - From `07-final-diagram.md`: extract the Mermaid code block → save as `{output_dir}/risk-overlay-diagram.mmd`
+   - From `02-structural-diagram.md`: extract all layer Mermaid code blocks (L1, L2, L3) → save as `{output_dir}/{name}-L1-arch.mmd`, etc.
+   - From `07-final-diagram.md`: extract the L4 Mermaid code block → save as `{output_dir}/{name}-L4-threat.mmd`
+   - From `03-threat-identification.md`: extract auth sequence diagram (if present) → save as `{output_dir}/{name}-auth-sequence.mmd`
+   - From `05-false-negative-hunting.md`: extract attack tree diagrams (if present) → save as `{output_dir}/{name}-attack-tree-{N}.mmd`
+   - For backward compatibility, also save copies as `structural-diagram.mmd` (from L1) and `risk-overlay-diagram.mmd` (from L4)
 
 2. **Pre-process .mmd files before rendering**: Strip elements that cause rendering failures:
    - Replace `~~>` wavy arrows with `==>` thick arrows (not valid in standard Mermaid flowcharts)
@@ -585,7 +592,7 @@ Use the `frontend-design` skill to produce a single-file interactive HTML report
 
 - **Dark theme** with professional security aesthetic (not generic — use the frontend-design skill's design thinking)
 - **Navigation sidebar** with all sections linked
-- **Mermaid diagrams rendered inline** using mermaid.js CDN — both structural and risk overlay. Initialize mermaid with the theme from `~/.claude/skills/threat-model/references/mermaid-config.json` (see Rendering Configuration section in `mermaid-conventions.md`)
+- **Mermaid diagrams rendered inline** using mermaid.js CDN — all layer diagrams (L1-L4) plus companion diagrams (auth sequence, attack trees). Initialize mermaid with the theme from `~/.claude/skills/threat-model/references/mermaid-config.json` (see §2 Rendering Config in `mermaid-spec.md`)
 - **Severity badges** color-coded (CRITICAL=red, HIGH=orange, MEDIUM=yellow, LOW=green)
 - **Interactive elements**: collapsible finding details, filterable findings table, search
 - **Diagram interaction controls** — each Mermaid diagram must have:

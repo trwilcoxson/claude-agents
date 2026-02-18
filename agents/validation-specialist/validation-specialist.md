@@ -55,7 +55,8 @@ Read ALL of these from `{output_dir}/` (verify each exists before reading):
 - `~/.claude/skills/threat-model/references/visual-completeness-checklist.md`
 - `~/.claude/skills/threat-model/references/agent-output-protocol.md`
 - `~/.claude/skills/threat-model/references/frameworks.md`
-- `~/.claude/skills/threat-model/references/mermaid-conventions.md`
+- `~/.claude/skills/threat-model/references/mermaid-spec.md`
+- `~/.claude/skills/threat-model/references/mermaid-layers.md`
 
 ## Validation Process
 
@@ -107,8 +108,8 @@ Read the visual completeness checklist from `{output_dir}/visual-completeness-ch
 
 For each category marked APPLICABLE:
 
-1. **Structural diagram check**: Read `02-structural-diagram.md`. Verify the category appears in the Mermaid diagram using the conventions from `mermaid-conventions.md`.
-2. **Risk overlay check**: Read `07-final-diagram.md`. Verify the category appears in the risk overlay diagram.
+1. **Structural diagram check**: Read `02-structural-diagram.md`. Verify the category appears in the L1-L3 Mermaid diagrams using the conventions from `mermaid-spec.md` §3 (symbol taxonomy) and `mermaid-layers.md`.
+2. **Risk overlay check**: Read `07-final-diagram.md`. Verify the category appears in the L4 threat overlay diagram.
 3. **For gaps**: Create a specific correction request identifying what is missing, what convention should be used, and where in the diagram it should appear.
 
 **Output:** Visual completeness gap table with: Category, Expected in structural?, Found?, Expected in risk overlay?, Found?, Correction needed.

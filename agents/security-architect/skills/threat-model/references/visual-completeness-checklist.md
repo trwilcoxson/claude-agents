@@ -2,13 +2,13 @@
 
 ## Contents
 - Instructions
-- Checklist (20 categories): External Entities, Processes, Data Stores, Trust Boundaries, Data Flow Labels, Risk Color Coding, Threat Annotations, Component Metadata, Identity Elements, Secrets/Key Mgmt, Control/Data Plane, Attack Paths, Control Indicators, Data Classification, Encryption State, Network Zones, Deployment Pipeline, External Dependencies, Tenant Boundaries, Region Boundaries
+- Checklist (26 categories): External Entities, Processes, Data Stores, Trust Boundaries, Data Flow Labels, Risk Color Coding, Threat Annotations, Component Metadata, Identity Elements, Secrets/Key Mgmt, Control/Data Plane, Attack Paths, Control Indicators, Data Classification, Encryption State, Network Zones, Deployment Pipeline, External Dependencies, Tenant Boundaries, Region Boundaries, Typed Edges, Ownership Markers, Machine-Parseable Annotations, Version Stamp, Density Compliance, Companion Diagrams
 - Applicability Guide (by architecture type)
 - Summary Scorecard
 
-This checklist ensures all applicable visual categories defined in `mermaid-conventions.md` are represented in threat model diagrams. It is used by the **security-architect** during Phase 1 (applicability assessment), Phase 2 (structural diagram construction), and Phase 7 (risk overlay augmentation), and is verified by the **validation-specialist** after all analysis completes.
+This checklist ensures all applicable visual categories defined in `mermaid-spec.md`, `mermaid-layers.md`, and `mermaid-diagrams.md` are represented in threat model diagrams. It is used by the **security-architect** during Phase 1 (applicability assessment), Phase 2 (structural diagram construction), and Phase 7 (risk overlay augmentation), and is verified by the **validation-specialist** after all analysis completes.
 
-Every threat model diagram should be audited against these 20 meta-categories. Categories that do not apply to the target system must be explicitly marked with a justification so reviewers can distinguish intentional omissions from oversights.
+Every threat model diagram should be audited against these 26 meta-categories. Categories that do not apply to the target system must be explicitly marked with a justification so reviewers can distinguish intentional omissions from oversights.
 
 ---
 
@@ -343,6 +343,102 @@ Every threat model diagram should be audited against these 20 meta-categories. C
 
 ---
 
+### 21. Typed Edges
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-spec.md` §4 |
+| Types | 8 edge types: Data flow, Control/API, AuthN/AuthZ, Secrets/Keys, Admin/Ops, Async/Event, Replication, Build/Deploy |
+| Required pass | Both (structural + risk overlay) |
+
+- [ ] **Applicable?** YES / NO (justification: _______________) / N/A
+- [ ] **Represented in structural diagram?** (Phase 2)
+- [ ] **Represented in risk overlay?** (Phase 7)
+- **Evidence:** _Every edge uses a typed label with prefix, protocol, and sensitivity_
+- **Components:** _Which edges use which type prefixes_
+
+---
+
+### 22. Ownership Markers
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-spec.md` §7 |
+| Markers | `[team:X]`, `[managed]`, `[self-managed]`, `[vendor:X]`, `[control-owner:X]` |
+| Required pass | Both (structural + risk overlay) |
+
+- [ ] **Applicable?** YES / NO (justification: _______________) / N/A
+- [ ] **Represented in structural diagram?** (Phase 2)
+- [ ] **Represented in risk overlay?** (Phase 7)
+- **Evidence:** _What was observed during reconnaissance about ownership boundaries_
+- **Components:** _Which nodes carry ownership annotations_
+
+---
+
+### 23. Machine-Parseable Annotations
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-spec.md` §5 |
+| Format | `⚠ STRIDE · LxI=Score BAND\nMITRE · CWE\n✓ Mitigation [Status] [R:Residual]` |
+| Required pass | Risk overlay only |
+
+- [ ] **Applicable?** YES / NO (justification: _______________) / N/A
+- [ ] **Represented in risk overlay?** (Phase 7)
+- **Evidence:** _Threat annotations use machine-parseable format per §5_
+- **Components:** _Which nodes carry enriched threat labels_
+
+---
+
+### 24. Version Stamp
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-spec.md` §6 |
+| Format | `%% Version: {date} \| Phase: {N} \| System: {name}` |
+| Required pass | Both (structural + risk overlay) |
+
+- [ ] **Applicable?** YES (always applicable) / N/A
+- [ ] **Represented in structural diagram?** (Phase 2)
+- [ ] **Represented in risk overlay?** (Phase 7)
+- **Evidence:** _Version stamp comment present in diagram source_
+- **Components:** _Comment line at top of each .mmd file_
+
+---
+
+### 25. Density Compliance
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-spec.md` §6 |
+| Limits | ≤15 nodes per subgraph, ≤25 nodes total |
+| Required pass | Both (structural + risk overlay) |
+
+- [ ] **Applicable?** YES (always applicable) / N/A
+- [ ] **Represented in structural diagram?** (Phase 2)
+- [ ] **Represented in risk overlay?** (Phase 7)
+- **Evidence:** _Node count per subgraph and total node count within limits_
+- **Components:** _Total node count, largest subgraph node count_
+
+---
+
+### 26. Companion Diagrams
+
+| Property | Value |
+|----------|-------|
+| Spec reference | `mermaid-diagrams.md` §1-§5 |
+| Types | Attack Tree (Phase 5), Auth Sequence (Phase 3), Data Lifecycle (Phase 1, optional) |
+| Required pass | Per-type: Attack Tree in Phase 5, Auth Sequence in Phase 3 |
+
+- [ ] **Applicable?** YES / NO (justification: _______________) / N/A
+- [ ] **Attack tree produced?** (Phase 5)
+- [ ] **Auth sequence produced?** (Phase 3, if system has AuthN/AuthZ)
+- [ ] **Data lifecycle produced?** (Phase 1, optional)
+- **Evidence:** _Kill chains identified, auth flows present, data lifecycle relevance_
+- **Components:** _List companion diagram filenames_
+
+---
+
 ## Applicability Guide
 
 Use this table to quickly assess which categories are typically relevant for a given system architecture. This is a starting point; always confirm against actual Phase 1 observations.
@@ -371,6 +467,12 @@ Use this table to quickly assess which categories are typically relevant for a g
 | 18 | External Deps | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; |
 | 19 | Tenant Boundaries | &#8212; | &#8212; | &#10003; | &#9675; | &#8212; | &#8212; |
 | 20 | Region Boundaries | &#8212; | &#8212; | &#9675; | &#10003; | &#9675; | &#8212; |
+| 21 | Typed Edges | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; |
+| 22 | Ownership Markers | &#9675; | &#10003; | &#10003; | &#10003; | &#10003; | &#9675; |
+| 23 | Machine-Parseable Annotations | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; |
+| 24 | Version Stamp | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; |
+| 25 | Density Compliance | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; | &#10003; |
+| 26 | Companion Diagrams | &#9675; | &#10003; | &#10003; | &#10003; | &#10003; | &#9675; |
 
 ---
 
@@ -383,10 +485,10 @@ Copy and fill in this scorecard at the end of the analysis to provide a quick co
   VISUAL COMPLETENESS SCORECARD
 ============================================
 
-  Total categories:                    20
-  Applicable:                          __/20
-  Not Applicable (with justification): __/20
-  N/A:                                 __/20
+  Total categories:                    26
+  Applicable:                          __/26
+  Not Applicable (with justification): __/26
+  N/A:                                 __/26
 
   Structural Diagram (Phase 2):       __/__ applicable
   Risk Overlay (Phase 7):             __/__ applicable
