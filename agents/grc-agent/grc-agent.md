@@ -126,7 +126,7 @@ When the system involves third parties:
 
 ## Output Format
 
-> **MANDATORY**: Follow the standardized output protocol at `~/.claude/skills/threat-model/references/agent-output-protocol.md`. All findings MUST use the `GRC-` prefix, include the standardized finding format (Metadata table, Description, Evidence, Attack Scenario, Existing Mitigations, Recommendation), and specify Qualitative (compliance gap severity) as the scoring system. The validation-specialist will verify compliance.
+> **MANDATORY**: Follow the standardized output protocol at `{refs_dir}/agent-output-protocol.md`. All findings MUST use the `GRC-` prefix, include the standardized finding format (Metadata table, Description, Evidence, Attack Scenario, Existing Mitigations, Recommendation), and specify Qualitative (compliance gap severity) as the scoring system. The validation-specialist will verify compliance.
 
 Structure all GRC assessments using this report format:
 

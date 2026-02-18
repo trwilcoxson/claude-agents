@@ -290,7 +290,7 @@ When the security-architect (or user) asks you to generate the final consolidate
 
 This is your primary value-add beyond QA. You take the scattered outputs from the threat model (8 phase files) and any team assessment outputs (privacy, GRC, code review) and produce a single, integrated, professionally formatted deliverable in four formats: **Word (.docx)**, **PDF**, **Web (HTML)**, and **Executive Presentation (.pptx)**.
 
-> **MANDATORY**: Before every report generation, read the report template at `~/.claude/skills/threat-model/references/report-template.md`. Follow it exactly for section ordering, heading text, required elements, table column headers, conditional sections, and diagram placement. Deviations from the template are not permitted.
+> **MANDATORY**: Before every report generation, read the report template at `{refs_dir}/report-template.md`. Follow it exactly for section ordering, heading text, required elements, table column headers, conditional sections, and diagram placement. Deviations from the template are not permitted.
 
 ### Pipeline Overview
 
@@ -317,7 +317,7 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 
 **Run this discovery process first:**
 
-1. **Read the report template**: `Read ~/.claude/skills/threat-model/references/report-template.md` — this is the canonical structure you must follow.
+1. **Read the report template**: `Read {refs_dir}/report-template.md` — this is the canonical structure you must follow.
 2. Use `Glob` with pattern `{output_dir}/*.md` and `{output_dir}/*.xlsx` to find all available files.
 3. **Check for validation-report.md**: If `{output_dir}/validation-report.md` exists, read it. This contains cross-agent validation results (deduplication decisions, false positive candidates, severity conflict resolutions, framework ID corrections, confidence escalations). Apply all documented corrections during the consolidation step (Step 2).
 4. Classify each file into the categories below.
@@ -505,7 +505,7 @@ XIV. APPENDICES
 
 **You have Bash access — use it to render diagrams directly.**
 
-**IMPORTANT**: Read the diagram spec at `~/.claude/skills/threat-model/references/mermaid-spec.md` — specifically §2 (Rendering Config) and §1 (Design Principles). The rendering config at `~/.claude/skills/threat-model/references/mermaid-config.json` provides the professional theme (fonts, spacing, curves) that makes diagrams look polished.
+**IMPORTANT**: Read the diagram spec at `{refs_dir}/mermaid-spec.md` — specifically §2 (Rendering Config) and §1 (Design Principles). The rendering config at `{refs_dir}/mermaid-config.json` provides the professional theme (fonts, spacing, curves) that makes diagrams look polished.
 
 1. **Extract Mermaid code** from phase files:
    - From `02-structural-diagram.md`: extract all layer Mermaid code blocks (L1, L2, L3) → save as `{output_dir}/{name}-L1-arch.mmd`, etc.
@@ -524,13 +524,13 @@ XIV. APPENDICES
    npx -y @mermaid-js/mermaid-cli \
      -i {output_dir}/structural-diagram.mmd \
      -o {output_dir}/structural-diagram.png \
-     -c ~/.claude/skills/threat-model/references/mermaid-config.json \
+     -c {refs_dir}/mermaid-config.json \
      -w 3000 --scale 2 -b white
 
    npx -y @mermaid-js/mermaid-cli \
      -i {output_dir}/risk-overlay-diagram.mmd \
      -o {output_dir}/risk-overlay-diagram.png \
-     -c ~/.claude/skills/threat-model/references/mermaid-config.json \
+     -c {refs_dir}/mermaid-config.json \
      -w 3000 --scale 2 -b white
    ```
 
@@ -593,7 +593,7 @@ Use the `frontend-design` skill to produce a single-file interactive HTML report
 
 - **Dark theme** with professional security aesthetic (not generic — use the frontend-design skill's design thinking)
 - **Navigation sidebar** with all sections linked
-- **Mermaid diagrams rendered inline** using mermaid.js CDN — all layer diagrams (L1-L4) plus companion diagrams (auth sequence, attack trees). Initialize mermaid with the theme from `~/.claude/skills/threat-model/references/mermaid-config.json` (see §2 Rendering Config in `mermaid-spec.md`)
+- **Mermaid diagrams rendered inline** using mermaid.js CDN — all layer diagrams (L1-L4) plus companion diagrams (auth sequence, attack trees). Initialize mermaid with the theme from `{refs_dir}/mermaid-config.json` (see §2 Rendering Config in `mermaid-spec.md`)
 - **Severity badges** color-coded (CRITICAL=red, HIGH=orange, MEDIUM=yellow, LOW=green)
 - **Interactive elements**: collapsible finding details, filterable findings table, search
 - **Diagram interaction controls** — each Mermaid diagram must have:

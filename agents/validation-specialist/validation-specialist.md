@@ -46,12 +46,12 @@ Read ALL of these from `{output_dir}/` (verify each exists before reading):
 - `compliance-gap-analysis.md` — from compliance-specialist
 - `code-security-review.md` — from code-security-specialist
 
-**Reference files:**
-- `~/.claude/skills/threat-model/references/visual-completeness-checklist.md`
-- `~/.claude/skills/threat-model/references/agent-output-protocol.md`
-- `~/.claude/skills/threat-model/references/frameworks.md`
-- `~/.claude/skills/threat-model/references/mermaid-spec.md`
-- `~/.claude/skills/threat-model/references/mermaid-layers.md`
+**Reference files** (located in the refs directory provided in the spawn prompt):
+- `visual-completeness-checklist.md`
+- `agent-output-protocol.md`
+- `frameworks.md`
+- `mermaid-spec.md`
+- `mermaid-layers.md`
 
 ## Validation Process
 
