@@ -4,20 +4,20 @@ Custom agents for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 
 
 ## Security Assessment Suite
 
-A coordinated team of agents for comprehensive security assessments. The `security-architect` leads and orchestrates the others.
+A pipeline of specialized agents for comprehensive security assessments, orchestrated by the [threat-model skill](https://github.com/trwilcoxson/claude-skills). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design document.
 
-### `security-architect` — Threat Modeling & Assessment Lead
+The parent conversation reads the skill's orchestration guide and spawns all agents as flat peers — no nesting. Solo mode runs the threat model + report generation. Team mode adds privacy, compliance, code review, and validation agents in parallel.
 
-Performs architectural security assessments using the [threat-model skill](https://github.com/trwilcoxson/claude-skills). Operates solo for focused threat models or leads a team of specialist agents for comprehensive multi-domain assessments.
+### `security-architect` — Threat Modeling Specialist
+
+Performs architectural security assessments using the [threat-model skill](https://github.com/trwilcoxson/claude-skills). Executes the 8-phase threat model analysis and writes structured phase outputs.
 
 **Capabilities:**
 - 8-phase structured threat modeling (STRIDE-LM, PASTA, OWASP Risk Rating)
-- Solo mode with automatic report generation
-- Team mode orchestrating privacy, GRC, code review, and report agents in parallel
 - Cloud security (AWS, GCP, Azure), container, serverless, and API security expertise
-- Mermaid data flow diagrams with two-pass structural + risk overlay approach
+- Mermaid data flow diagrams with 4-layer structural + risk overlay approach
 
-**Dependencies:** [threat-model skill](https://github.com/trwilcoxson/claude-skills), report-analyst agent
+**Dependencies:** [threat-model skill](https://github.com/trwilcoxson/claude-skills)
 
 ### `report-analyst` — QA & Multi-Format Report Generator
 
@@ -107,19 +107,20 @@ cp agents/security-architect/security-architect.md .claude/agents/security-archi
 For the full security assessment suite, install all security agents:
 
 ```bash
-for agent in security-architect report-analyst code-review-agent grc-agent privacy-agent security-reviewer; do
+for agent in security-architect report-analyst code-review-agent grc-agent privacy-agent validation-specialist security-reviewer; do
   cp agents/$agent/$agent.md ~/.claude/agents/$agent.md
 done
 ```
 
-**Note:** The security-architect agent requires the [threat-model skill](https://github.com/trwilcoxson/claude-skills). The report-analyst requires the docx, pdf, pptx, and frontend-design skills.
+**Note:** The security-architect agent requires the [threat-model skill](https://github.com/trwilcoxson/claude-skills). The report-analyst requires the docx, pdf, pptx, and frontend-design skills. The validation-specialist has no built-in agent type — it is spawned as `general-purpose` by the parent conversation.
 
 ## Structure
 
 ```
 agents/
   security-architect/
-    security-architect.md       # Team lead — threat modeling & orchestration
+    security-architect.md       # Threat modeling specialist (8-phase analysis)
+    skills/threat-model/        # Methodology, orchestration, and 11 reference files
   report-analyst/
     report-analyst.md           # QA & multi-format report generation
   code-review-agent/
@@ -128,10 +129,14 @@ agents/
     grc-agent.md                # Governance, risk & compliance
   privacy-agent/
     privacy-agent.md            # Privacy impact assessment
+  validation-specialist/
+    validation-specialist.md    # Cross-agent validation (spawned as general-purpose)
   security-reviewer/
     security-reviewer.md        # Standalone code security review
   code-quality-reviewer/
     code-quality-reviewer.md    # Code quality review
+docs/
+  ARCHITECTURE.md               # Full system architecture design document
 ```
 
 ## License
