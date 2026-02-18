@@ -376,79 +376,35 @@ While specialist agents work their tasks concurrently, you continue with your ow
 
        Read ALL .md files in {output_dir}/ as your inputs (01-reconnaissance.md through 08-threat-model-report.md, plus any team outputs like privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md).
 
-       IMPORTANT: You do NOT have Bash/shell access. Here is what you must do:
+       You have Bash access. GENERATE ALL FOUR FORMATS — use your docx, pdf, pptx, and frontend-design skills:
+       1. report.html — use your frontend-design skill for an interactive web report with Mermaid diagrams, sidebar nav, severity filtering
+       2. report.docx — use your docx skill for a professional Word doc with TOC, cover page, embedded diagrams
+       3. report.pdf — use your pdf skill to convert from Word or generate directly
+       4. executive-summary.pptx — use your pptx skill for a 9-11 slide executive presentation
 
-       1. Generate report.html DIRECTLY using Write tool (use your frontend-design skill)
-          - Interactive web report with Mermaid diagrams rendered via mermaid.js CDN, sidebar nav, severity filtering
-       2. Write generate_reports.py — a self-contained Python script that generates:
-          - report.docx (use python-docx)
-          - report.pdf (use reportlab)
-          - executive-summary.pptx (use python-pptx)
-          The script must embed all report content inline and accept the output directory as first argument.
-       3. Extract and pre-process Mermaid .mmd files (strip ~~> wavy arrows, note directives)
-          - Write structural-diagram.mmd and risk-overlay-diagram.mmd using Write tool
-
-       The security-architect will execute your scripts and render diagrams after you complete.
-
-       ADDITIONAL REQUIREMENTS:
+       CRITICAL REQUIREMENTS:
+       - You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash.
+       - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow
+       - Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -w 2000 -b white (do NOT use mmdc as subcommand)
+       - Pre-process .mmd files: strip ~~> wavy arrows and note directives before rendering
        - Deduplicate findings across all sources
        - Cross-reference everything: findings <-> diagrams <-> remediation <-> components
        - The project root is {project_root}.
 
-       BEFORE DECLARING DONE: Use Read tool to verify these files exist:
-       - {output_dir}/report.html
-       - {output_dir}/generate_reports.py
-       - {output_dir}/structural-diagram.mmd
-       - {output_dir}/risk-overlay-diagram.mmd
-       - {output_dir}/consolidated-report.md
+       BEFORE DECLARING DONE: Verify all files exist and are non-empty:
+       ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx {output_dir}/structural-diagram.png {output_dir}/risk-overlay-diagram.png
 
-       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage with:
-       - summary: 'HTML report and generation scripts ready'
-       - content: Include the exact commands for the security-architect to run:
-         1. Mermaid rendering: npx -y @mermaid-js/mermaid-cli -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white (same for risk-overlay)
-         2. Script execution: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow && python {output_dir}/generate_reports.py {output_dir}"
+       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='All reports generated', content='Reports generated: report.html, report.docx, report.pdf, executive-summary.pptx, structural-diagram.png, risk-overlay-diagram.png')."
    )
    ```
 
-5. **After report-analyst completes**, it will have generated:
-   - `report.html` (directly, via Write tool)
-   - `generate_reports.py` (Python script for DOCX/PDF/PPTX)
-   - `structural-diagram.mmd` and `risk-overlay-diagram.mmd` (cleaned Mermaid sources)
-
-### Phase D.7: Execute Report Generation Scripts (MANDATORY — YOU DO THIS)
-
-**The report-analyst does NOT have Bash access.** It creates the HTML report and Python generation scripts, but YOU must execute them. This phase is critical — without it, only the HTML report exists.
-
-1. **Render Mermaid diagrams to PNG**:
-   ```bash
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/risk-overlay-diagram.mmd -o {output_dir}/risk-overlay-diagram.png -w 2000 -b white
-   ```
-
-2. **Verify PNGs rendered successfully** (must be >100 bytes — 67 bytes means placeholder):
-   ```bash
-   for f in structural-diagram.png risk-overlay-diagram.png; do
-     size=$(wc -c < "{output_dir}/$f"); [ "$size" -gt 100 ] && echo "OK: $f ($size bytes)" || echo "FAIL: $f ($size bytes)"
-   done
-   ```
-   If rendering fails, check for Mermaid syntax errors in the `.mmd` files:
-   - `~~>` wavy arrows (not valid — replace with comments)
-   - `note` directives (not valid in flowchart — remove)
-   - Unescaped special characters in labels
-   Fix the `.mmd` file and retry.
-
-3. **Set up Python venv and run generation script**:
-   ```bash
-   python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow && python {output_dir}/generate_reports.py {output_dir}
-   ```
-
-4. **Verify ALL report files exist and are non-empty**:
+5. **After report-analyst completes**, verify ALL report files exist:
    ```bash
    for f in report.html report.docx report.pdf executive-summary.pptx structural-diagram.png risk-overlay-diagram.png; do
      test -s "{output_dir}/$f" && echo "OK: $f ($(wc -c < "{output_dir}/$f") bytes)" || echo "MISSING: $f"
    done
    ```
-   If any file is MISSING, debug the generation script and retry. Do NOT proceed to Phase E until all six files exist.
+   If any files are missing, send a message to the report-generator asking it to complete the missing formats. Do NOT proceed to Phase E until all six files exist.
 
 ### Phase E: Shutdown & Cleanup
 
@@ -501,10 +457,7 @@ Phase D: TaskList (verify specialists completed) → ls (verify files)
 Phase D.5: Spawn validation-specialist → wait for completion → read validation-report.md
     │
     ▼
-Phase D.6: Spawn report-analyst (SEQUENTIAL — must be last)
-    │
-    ▼
-Phase D.7: Execute scripts (YOU — render Mermaid PNGs + run generate_reports.py + verify all files)
+Phase D.6: Spawn report-analyst (SEQUENTIAL — must be last) → verify all files exist
     │
     ▼
 Phase E: SendMessage(shutdown_request) x5 → wait for confirmations → TeamDelete → report to user
@@ -532,46 +485,34 @@ Task tool call:
     FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md
     Follow the template EXACTLY for section ordering, heading text, table columns, and structure.
 
-    IMPORTANT: You do NOT have Bash/shell access. Here is what you must do:
+    You have Bash access. GENERATE ALL FOUR FORMATS — use your docx, pdf, pptx, and frontend-design skills:
+    1. report.html — use your frontend-design skill for interactive web report with Mermaid diagrams
+    2. report.docx — use your docx skill for professional Word doc with TOC, cover page, embedded diagrams
+    3. report.pdf — use your pdf skill to convert from Word or generate directly
+    4. executive-summary.pptx — use your pptx skill for 9-11 slide executive presentation
 
-    1. Generate report.html DIRECTLY using Write tool (use your frontend-design skill)
-    2. Write generate_reports.py — a self-contained Python script that generates report.docx, report.pdf, executive-summary.pptx
-       The script must embed all report content inline and accept the output directory as first argument.
-    3. Extract and pre-process Mermaid .mmd files (strip ~~> wavy arrows, note directives)
-       Write structural-diagram.mmd and risk-overlay-diagram.mmd using Write tool
-
-    The security-architect will execute your scripts and render diagrams after you complete.
-
-    ADDITIONAL REQUIREMENTS:
+    CRITICAL REQUIREMENTS:
+    - You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash.
+    - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow
+    - Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -w 2000 -b white (do NOT use mmdc as subcommand)
+    - Pre-process .mmd files: strip ~~> wavy arrows and note directives before rendering
     - Cross-key everything: findings <-> diagrams <-> remediation <-> components <-> threat actors
     - Run post-generation validation checklist before declaring complete
     - The project root is {project_root}.
 
-    BEFORE DECLARING DONE: Use Read to verify report.html, generate_reports.py, and .mmd files exist.
-    In your completion message, include exact commands for script execution and Mermaid rendering."
+    BEFORE DECLARING DONE: Verify all files exist and are non-empty:
+    ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx"
 ```
 
-After report-analyst completes, **you must execute the generation scripts** (report-analyst does NOT have Bash access):
+After report-analyst completes, verify all files exist:
+```bash
+for f in report.html report.docx report.pdf executive-summary.pptx; do
+  test -s "{output_dir}/$f" && echo "OK: $f" || echo "MISSING: $f"
+done
+```
+If any files are missing, re-spawn the report-analyst to complete them.
 
-1. **Render Mermaid diagrams to PNG**:
-   ```bash
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/risk-overlay-diagram.mmd -o {output_dir}/risk-overlay-diagram.png -w 2000 -b white
-   ```
-
-2. **Set up venv and run generation script**:
-   ```bash
-   python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow && python {output_dir}/generate_reports.py {output_dir}
-   ```
-
-3. **Verify all output files exist**:
-   ```bash
-   for f in report.html report.docx report.pdf executive-summary.pptx structural-diagram.png risk-overlay-diagram.png; do
-     test -s "{output_dir}/$f" && echo "OK: $f" || echo "MISSING: $f"
-   done
-   ```
-
-4. **Inform the user** of generated files:
+Inform the user of generated files:
 - `{output_dir}/report.html` — interactive web report (open in browser)
 - `{output_dir}/report.docx` — Word document (editable)
 - `{output_dir}/report.pdf` — PDF (for distribution)
