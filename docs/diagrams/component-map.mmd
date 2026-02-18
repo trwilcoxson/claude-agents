@@ -27,8 +27,9 @@ flowchart LR
 
     subgraph Agents["Agent Definitions — ~/.claude/agents/"]
         direction TB
-        SA["<b>security-architect.md</b><br/>Type: security-architect<br/>Tools: Bash, Read, Write, Edit, Grep, Glob<br/>Skills: threat-model"]
-        RA["<b>report-analyst.md</b><br/>Type: report-analyst<br/>Tools: Read, Grep, Glob, Write, Edit, Bash<br/>Skills: docx, pdf, pptx, frontend-design"]
+        SA["<b>security-architect.md</b><br/>Type: security-architect<br/>Phases: 1, 3-6, 8s<br/>Skills: threat-model"]
+        DS["<b>diagram-specialist.md</b><br/>Type: security-architect<br/>Phases: 2, 7<br/>Skills: threat-model"]
+        RA["<b>report-analyst.md</b><br/>Type: report-analyst<br/>Skills: docx, pdf, pptx, frontend-design"]
         CR["<b>code-review-agent.md</b><br/>Type: code-review-agent"]
         PA["<b>privacy-agent.md</b><br/>Type: privacy-agent"]
         GRC["<b>grc-agent.md</b><br/>Type: grc-agent"]
@@ -42,7 +43,8 @@ flowchart LR
         R["<b>Report Deliverables</b><br/>report.html<br/>report.docx<br/>report.pdf<br/>executive-summary.pptx"]
     end
 
-    SA -->|"writes"| P
+    SA -->|"writes 01, 03-06, 08"| P
+    DS -->|"writes 02, 07"| P
     PA -->|"writes"| T
     GRC -->|"writes"| T
     CR -->|"writes"| T
@@ -50,7 +52,9 @@ flowchart LR
     RA -->|"generates"| R
 
     SA -.->|"follows"| SKILL
-    SA -.->|"consults"| RefFiles
+    SA -.->|"consults"| FW
+    DS -.->|"consults"| MermaidRefs
+    DS -.->|"consults"| VCC
     RA -.->|"follows"| RT
     VS -.->|"verifies against"| FW
     VS -.->|"checks"| AOP
@@ -59,6 +63,7 @@ flowchart LR
     classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
     classDef mermaid fill:#fce7f3,stroke:#ec4899,stroke-width:1px,color:#831843
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef special fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef output fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
 
@@ -66,5 +71,6 @@ flowchart LR
     class RefFiles,FW,AOP,RT,AC,VCC ref
     class MermaidRefs,MS,ML,MD,MT,MRC,MC mermaid
     class SA,RA,CR,PA,GRC agent
+    class DS diagram
     class VS special
     class Output,P,T,R output

@@ -129,7 +129,7 @@ A threat model score of 15 and a code review score of 7.5 are not equivalent -- 
 
 ### Threat Model Report Review
 
-1. **Phase completeness**: All 8 required phases are present in the output: Reconnaissance, Structural Diagram, Threat Identification, Risk Quantification, False Negative Hunting, False Positive Validation, Visual Validation (risk overlay diagram), Final Report
+1. **Phase completeness**: All 8 required phases are present in the output: Reconnaissance, Structural Diagram (from diagram-specialist), Threat Identification, Risk Quantification, False Negative Hunting, False Positive Validation, Visual Validation (risk overlay diagram, from diagram-specialist), Threat Model Summary
 2. **Threat IDs**: Sequential (TM-001, TM-002, ...), no gaps in the sequence, no duplicate IDs
 3. **STRIDE-LM coverage**: Every in-scope component assessed against all 7 categories (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege, Lateral Movement). Flag any component with missing categories.
 4. **Scoring consistency**: Similar threats should have similar OWASP Risk Rating scores. Flag outliers where a less severe threat scores higher than a more severe one.
@@ -327,13 +327,13 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 | File | Source | Contains |
 |------|--------|----------|
 | `01-reconnaissance.md` | security-architect | Asset inventory, threat actors, attack surface, security controls |
-| `02-structural-diagram.md` | security-architect | Mermaid structural DFD |
+| `02-structural-diagram.md` | diagram-specialist | Mermaid structural DFD (L1-L3 layers) |
 | `03-threat-identification.md` | security-architect | STRIDE-LM threats (unscored) |
 | `04-risk-quantification.md` | security-architect | PASTA scoring, OWASP risk ratings |
 | `05-false-negative-hunting.md` | security-architect | Additional threats from adversarial analysis |
 | `06-validated-findings.md` | security-architect | Deduplicated, confidence-rated findings |
-| `07-final-diagram.md` | security-architect | Risk-overlay Mermaid diagram |
-| `08-threat-model-report.md` | security-architect | Integrated threat model report |
+| `07-final-diagram.md` | diagram-specialist | Risk-overlay Mermaid diagram (L4 threat overlay) |
+| `08-threat-model-report.md` | security-architect | Threat model summary: executive summary, validated findings table, remediation priorities. NOTE: This is a summary, not a full report — the full report structure comes from `report-template.md` |
 
 **Optional team inputs (include if present, skip gracefully if absent):**
 | File | Source | Contains | Report Sections Affected |

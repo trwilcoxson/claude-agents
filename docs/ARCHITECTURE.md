@@ -48,9 +48,14 @@ flowchart TB
         SKILL --> Decide
     end
 
-    subgraph Specialists["Specialist Agents — Flat Peers"]
+    subgraph Core["Core Pipeline — Sequential"]
         direction LR
-        SA["<b>security-architect</b><br/><i>Phases 1-8</i><br/>STRIDE-LM, PASTA<br/>Mermaid DFDs"]
+        SA["<b>security-architect</b><br/><i>Phase 1, 3-6, 8s</i><br/>STRIDE-LM, PASTA"]
+        DS["<b>diagram-specialist</b><br/><i>Phases 2, 7</i><br/>Mermaid DFDs"]
+    end
+
+    subgraph Specialists["Specialist Agents — Parallel (Team only)"]
+        direction LR
         PA["<b>privacy-agent</b><br/><i>PIA, LINDDUN</i><br/>GDPR, CCPA, HIPAA"]
         GRC["<b>grc-agent</b><br/><i>Compliance Mapping</i><br/>SOC 2, PCI-DSS, NIST"]
         CR["<b>code-review-agent</b><br/><i>CVSS v3.1</i><br/>Code Evidence"]
@@ -80,15 +85,21 @@ flowchart TB
     end
 
     User --> Parent
-    Parent -->|"spawns all agents"| Specialists
+    Parent -->|"spawns core agents"| Core
+    Parent -->|"spawns specialists"| Specialists
     Parent -->|"spawns sequentially"| PostProcess
+    Core -->|"write"| FS
     Specialists -->|"write"| FS
     PostProcess -->|"read all, write"| FS
+    SA -.->|"consult"| R1
+    DS -.->|"consult"| R2
     Specialists -.->|"consult"| Refs
+    RA -.->|"consult"| R3
     PostProcess -.->|"consult"| Refs
 
     classDef parent fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef fs fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
     classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
@@ -96,6 +107,7 @@ flowchart TB
 
     class Parent parent
     class SA,PA,GRC,CR agent
+    class DS diagram
     class VS,RA post
     class FS,Phases,TeamOut,ValOut,Reports fs
     class Refs,R1,R2,R3,R4 ref
@@ -113,7 +125,8 @@ flowchart TB
 | Component | Type | Claude Code Primitive | Built-in Agent Type | Purpose |
 |-----------|------|----------------------|--------------------|---------|
 | `SKILL.md` | Skill | `~/.claude/skills/threat-model/SKILL.md` | N/A | 8-phase threat model methodology + orchestration guide |
-| `security-architect` | Agent | `~/.claude/agents/security-architect.md` | `security-architect` | Executes threat model phases 1-8 |
+| `security-architect` | Agent | `~/.claude/agents/security-architect.md` | `security-architect` | Executes Phase 1 (recon), Phases 3-6 (analysis), Phase 8 (summary) |
+| `diagram-specialist` | Agent | `~/.claude/agents/diagram-specialist.md` | `security-architect` | Executes Phase 2 (structural DFDs) and Phase 7 (risk overlay) |
 | `privacy-agent` | Agent | `~/.claude/agents/privacy-agent.md` | `privacy-agent` | Privacy impact assessment |
 | `grc-agent` | Agent | `~/.claude/agents/grc-agent.md` | `grc-agent` | Compliance gap analysis |
 | `code-review-agent` | Agent | `~/.claude/agents/code-review-agent.md` | `code-review-agent` | Code-level vulnerability analysis |
@@ -125,12 +138,19 @@ flowchart TB
 
 **Solo Mode** — for small, focused systems:
 ```
-Parent → security-architect (blocking, phases 1-8) → report-analyst (blocking)
+Parent → security-architect (Phase 1)
+       → diagram-specialist (Phase 2)
+       → security-architect (Phases 3-6, 8 summary)
+       → diagram-specialist (Phase 7)
+       → report-analyst (blocking)
 ```
 
 **Team Mode** — for complex systems (default):
 ```
-Parent → security-architect (blocking, phases 1-8)
+Parent → security-architect (Phase 1)
+       → diagram-specialist (Phase 2)
+       → security-architect (Phases 3-6, 8 summary)
+       → diagram-specialist (Phase 7)
        → privacy-agent + grc-agent + code-review-agent (parallel, background)
        → wait for all 3
        → validation-specialist (blocking)
@@ -373,8 +393,9 @@ flowchart LR
 
     subgraph Agents["Agent Definitions — ~/.claude/agents/"]
         direction TB
-        SA["<b>security-architect.md</b><br/>Type: security-architect<br/>Tools: Bash, Read, Write, Edit, Grep, Glob<br/>Skills: threat-model"]
-        RA["<b>report-analyst.md</b><br/>Type: report-analyst<br/>Tools: Read, Grep, Glob, Write, Edit, Bash<br/>Skills: docx, pdf, pptx, frontend-design"]
+        SA["<b>security-architect.md</b><br/>Type: security-architect<br/>Phases: 1, 3-6, 8s<br/>Skills: threat-model"]
+        DS["<b>diagram-specialist.md</b><br/>Type: security-architect<br/>Phases: 2, 7<br/>Skills: threat-model"]
+        RA["<b>report-analyst.md</b><br/>Type: report-analyst<br/>Skills: docx, pdf, pptx, frontend-design"]
         CR["<b>code-review-agent.md</b><br/>Type: code-review-agent"]
         PA["<b>privacy-agent.md</b><br/>Type: privacy-agent"]
         GRC["<b>grc-agent.md</b><br/>Type: grc-agent"]
@@ -388,7 +409,8 @@ flowchart LR
         R["<b>Report Deliverables</b><br/>report.html<br/>report.docx<br/>report.pdf<br/>executive-summary.pptx"]
     end
 
-    SA -->|"writes"| P
+    SA -->|"writes 01, 03-06, 08"| P
+    DS -->|"writes 02, 07"| P
     PA -->|"writes"| T
     GRC -->|"writes"| T
     CR -->|"writes"| T
@@ -396,7 +418,9 @@ flowchart LR
     RA -->|"generates"| R
 
     SA -.->|"follows"| SKILL
-    SA -.->|"consults"| RefFiles
+    SA -.->|"consults"| FW
+    DS -.->|"consults"| MermaidRefs
+    DS -.->|"consults"| VCC
     RA -.->|"follows"| RT
     VS -.->|"verifies against"| FW
     VS -.->|"checks"| AOP
@@ -405,6 +429,7 @@ flowchart LR
     classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
     classDef mermaid fill:#fce7f3,stroke:#ec4899,stroke-width:1px,color:#831843
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef special fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef output fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
 
@@ -412,6 +437,7 @@ flowchart LR
     class RefFiles,FW,AOP,RT,AC,VCC ref
     class MermaidRefs,MS,ML,MD,MT,MRC,MC mermaid
     class SA,RA,CR,PA,GRC agent
+    class DS diagram
     class VS special
     class Output,P,T,R output
 ```
@@ -427,7 +453,8 @@ flowchart LR
 ```
 ~/.claude/
 ├── agents/
-│   ├── security-architect.md        # Threat model specialist (6 tools)
+│   ├── security-architect.md        # Threat model analysis: Phases 1, 3-6, 8 (6 tools)
+│   ├── diagram-specialist.md        # Mermaid DFDs: Phases 2, 7 (6 tools)
 │   ├── report-analyst.md            # QA + 4-format report generation
 │   ├── code-review-agent.md         # Code-level vulnerability analysis
 │   ├── privacy-agent.md             # Privacy impact assessment
@@ -463,13 +490,20 @@ flowchart TD
     Start(["User Request"]) --> Recon["Parent does lightweight recon<br/><i>Glob/Grep for IaC, APIs, data stores</i>"]
     Recon --> Mode{"Solo or Team?"}
 
-    Mode -->|"Small system,<br/>no sensitive data,<br/>no IaC"| Solo_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
-    Solo_SA -->|"writes 01-08.md"| Solo_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Generate 4 formats"]
+    Mode -->|"Small system,<br/>no sensitive data,<br/>no IaC"| Solo_SA1["<b>security-architect</b><br/><i>blocking</i><br/>Phase 1 only"]
+    Solo_SA1 -->|"01-reconnaissance.md"| Solo_DS1["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 2: structural DFDs"]
+    Solo_DS1 -->|"02-structural-diagram.md"| Solo_SA2["<b>security-architect</b><br/><i>blocking</i><br/>Phases 3-6, 8 summary"]
+    Solo_SA2 -->|"03-06.md, 08.md"| Solo_DS2["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 7: risk overlay"]
+    Solo_DS2 -->|"07-final-diagram.md"| Solo_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Generate 4 formats"]
     Solo_RA --> Solo_Done(["Solo Complete<br/><b>report.html, .docx, .pdf, .pptx</b>"])
 
-    Mode -->|"Complex system,<br/>PII/PHI, cloud IaC,<br/>compliance needs"| Team_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
+    Mode -->|"Complex system,<br/>PII/PHI, cloud IaC,<br/>compliance needs"| Team_SA1["<b>security-architect</b><br/><i>blocking</i><br/>Phase 1 only"]
 
-    Team_SA -->|"writes 01-08.md<br/>(specialists read 01)"| Fork["Parent spawns<br/>3 agents in parallel"]
+    Team_SA1 -->|"01-reconnaissance.md"| Team_DS1["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 2: structural DFDs"]
+    Team_DS1 -->|"02-structural-diagram.md"| Team_SA2["<b>security-architect</b><br/><i>blocking</i><br/>Phases 3-6, 8 summary"]
+    Team_SA2 -->|"03-06.md, 08.md"| Team_DS2["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 7: risk overlay"]
+
+    Team_DS2 -->|"07-final-diagram.md"| Fork["Parent spawns<br/>3 agents in parallel"]
 
     Fork --> PA["<b>privacy-agent</b><br/><i>background</i>"]
     Fork --> GRC["<b>grc-agent</b><br/><i>background</i>"]
@@ -491,12 +525,14 @@ flowchart TD
     classDef start fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e
     classDef decision fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef control fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
 
     class Start,Solo_Done,Team_Done,Verify start
     class Mode decision
-    class Solo_SA,Team_SA,PA,GRC,CR,Solo_RA,Team_RA agent
+    class Solo_SA1,Solo_SA2,Team_SA1,Team_SA2,PA,GRC,CR,Solo_RA,Team_RA agent
+    class Solo_DS1,Solo_DS2,Team_DS1,Team_DS2 diagram
     class Fork,Join control
     class VS post
 ```
@@ -564,5 +600,6 @@ This system analyzes security — it should also be secure in its operation:
 | v2 | Added validation-specialist, agent-output-protocol, reference files | Quality problems: duplicate findings, hallucinated IDs, inconsistent severity |
 | v3 | Split Mermaid conventions into 5 modular files | Single file was too large and mixed concerns (what vs when vs how) |
 | v4 | **Flat orchestration restructure** — moved team coordination from agent to SKILL.md | Discovered custom agents cannot add tools beyond built-in set. Entire team orchestration was silently broken. |
+| v5 | **Diagram-specialist extraction** — split Phases 2,7 into diagram-specialist; slimmed Phase 8 to summary-only | Context rot: security-architect accumulated ~137K tokens by Phase 7-8. Extracting diagrams removes ~38K tokens of Mermaid refs, reducing peak context to ~80-90K. |
 
-The current architecture (v4) is the result of discovering that the original design was structurally impossible within Claude Code's agent system. The flat orchestration model is not just a workaround — it is a genuinely better architecture that provides transparency, debuggability, and correct tool access.
+The current architecture (v5) extracts diagram production into a dedicated agent, reducing the security-architect's context window by ~35-42%. The flat orchestration model from v4 made this split trivial — no agent-to-agent communication changes were needed, only new spawn points in SKILL.md.

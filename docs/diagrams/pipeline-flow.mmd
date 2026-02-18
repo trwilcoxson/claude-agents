@@ -5,14 +5,21 @@ flowchart TD
     Recon --> Mode{"Solo or Team?"}
 
     %% Solo Path
-    Mode -->|"Small system,<br/>no sensitive data,<br/>no IaC"| Solo_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
-    Solo_SA -->|"writes 01-08.md"| Solo_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Generate 4 formats"]
+    Mode -->|"Small system,<br/>no sensitive data,<br/>no IaC"| Solo_SA1["<b>security-architect</b><br/><i>blocking</i><br/>Phase 1 only"]
+    Solo_SA1 -->|"01-reconnaissance.md"| Solo_DS1["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 2: structural DFDs"]
+    Solo_DS1 -->|"02-structural-diagram.md"| Solo_SA2["<b>security-architect</b><br/><i>blocking</i><br/>Phases 3-6, 8 summary"]
+    Solo_SA2 -->|"03-06.md, 08.md"| Solo_DS2["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 7: risk overlay"]
+    Solo_DS2 -->|"07-final-diagram.md"| Solo_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Generate 4 formats"]
     Solo_RA --> Solo_Done(["Solo Complete<br/><b>report.html, .docx, .pdf, .pptx</b>"])
 
     %% Team Path
-    Mode -->|"Complex system,<br/>PII/PHI, cloud IaC,<br/>compliance needs"| Team_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
+    Mode -->|"Complex system,<br/>PII/PHI, cloud IaC,<br/>compliance needs"| Team_SA1["<b>security-architect</b><br/><i>blocking</i><br/>Phase 1 only"]
 
-    Team_SA -->|"writes 01-08.md<br/>(specialists read 01)"| Fork["Parent spawns<br/>3 agents in parallel"]
+    Team_SA1 -->|"01-reconnaissance.md"| Team_DS1["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 2: structural DFDs"]
+    Team_DS1 -->|"02-structural-diagram.md"| Team_SA2["<b>security-architect</b><br/><i>blocking</i><br/>Phases 3-6, 8 summary"]
+    Team_SA2 -->|"03-06.md, 08.md"| Team_DS2["<b>diagram-specialist</b><br/><i>blocking</i><br/>Phase 7: risk overlay"]
+
+    Team_DS2 -->|"07-final-diagram.md"| Fork["Parent spawns<br/>3 agents in parallel"]
 
     Fork --> PA["<b>privacy-agent</b><br/><i>background</i>"]
     Fork --> GRC["<b>grc-agent</b><br/><i>background</i>"]
@@ -35,12 +42,14 @@ flowchart TD
     classDef start fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e
     classDef decision fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef done fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d
     classDef control fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
 
     class Start,Solo_Done,Team_Done,Verify start
     class Mode decision
-    class Solo_SA,Team_SA,PA,GRC,CR,Solo_RA,Team_RA agent
+    class Solo_SA1,Solo_SA2,Team_SA1,Team_SA2,PA,GRC,CR,Solo_RA,Team_RA agent
+    class Solo_DS1,Solo_DS2,Team_DS1,Team_DS2 diagram
     class Fork,Join control
     class VS post

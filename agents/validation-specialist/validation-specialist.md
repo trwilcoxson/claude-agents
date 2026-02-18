@@ -32,14 +32,14 @@ You are a cross-validation specialist in the security assessment pipeline. You r
 Read ALL of these from `{output_dir}/` (verify each exists before reading):
 
 **Required threat model phases:**
-- `01-reconnaissance.md` — asset inventory, threat actors, attack surface, security controls
-- `02-structural-diagram.md` — Mermaid structural DFD
-- `03-threat-identification.md` — STRIDE-LM threats (unscored)
-- `04-risk-quantification.md` — PASTA scoring, OWASP risk ratings
-- `05-false-negative-hunting.md` — additional threats from adversarial analysis
-- `06-validated-findings.md` — deduplicated, confidence-rated findings
-- `07-final-diagram.md` — risk-overlay Mermaid diagram
-- `08-threat-model-report.md` — integrated threat model report
+- `01-reconnaissance.md` — asset inventory, threat actors, attack surface, security controls (from security-architect)
+- `02-structural-diagram.md` — Mermaid structural DFD (from diagram-specialist)
+- `03-threat-identification.md` — STRIDE-LM threats, unscored (from security-architect)
+- `04-risk-quantification.md` — PASTA scoring, OWASP risk ratings (from security-architect)
+- `05-false-negative-hunting.md` — additional threats from adversarial analysis (from security-architect)
+- `06-validated-findings.md` — deduplicated, confidence-rated findings (from security-architect)
+- `07-final-diagram.md` — risk-overlay Mermaid diagram (from diagram-specialist)
+- `08-threat-model-report.md` — threat model summary: executive summary, findings table, remediation priorities (from security-architect)
 
 **Optional team outputs (include if present):**
 - `privacy-assessment.md` — from privacy-specialist

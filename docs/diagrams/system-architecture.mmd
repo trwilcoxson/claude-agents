@@ -10,9 +10,14 @@ flowchart TB
         SKILL --> Decide
     end
 
-    subgraph Specialists["Specialist Agents — Flat Peers"]
+    subgraph Core["Core Pipeline — Sequential"]
         direction LR
-        SA["<b>security-architect</b><br/><i>Phases 1-8</i><br/>STRIDE-LM, PASTA<br/>Mermaid DFDs"]
+        SA["<b>security-architect</b><br/><i>Phase 1, 3-6, 8s</i><br/>STRIDE-LM, PASTA"]
+        DS["<b>diagram-specialist</b><br/><i>Phases 2, 7</i><br/>Mermaid DFDs"]
+    end
+
+    subgraph Specialists["Specialist Agents — Parallel (Team only)"]
+        direction LR
         PA["<b>privacy-agent</b><br/><i>PIA, LINDDUN</i><br/>GDPR, CCPA, HIPAA"]
         GRC["<b>grc-agent</b><br/><i>Compliance Mapping</i><br/>SOC 2, PCI-DSS, NIST"]
         CR["<b>code-review-agent</b><br/><i>CVSS v3.1</i><br/>Code Evidence"]
@@ -42,15 +47,21 @@ flowchart TB
     end
 
     User --> Parent
-    Parent -->|"spawns all agents"| Specialists
+    Parent -->|"spawns core agents"| Core
+    Parent -->|"spawns specialists"| Specialists
     Parent -->|"spawns sequentially"| PostProcess
+    Core -->|"write"| FS
     Specialists -->|"write"| FS
     PostProcess -->|"read all, write"| FS
+    SA -.->|"consult"| R1
+    DS -.->|"consult"| R2
     Specialists -.->|"consult"| Refs
+    RA -.->|"consult"| R3
     PostProcess -.->|"consult"| Refs
 
     classDef parent fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
     classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef diagram fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
     classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
     classDef fs fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
     classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
@@ -58,6 +69,7 @@ flowchart TB
 
     class Parent parent
     class SA,PA,GRC,CR agent
+    class DS diagram
     class VS,RA post
     class FS,Phases,TeamOut,ValOut,Reports fs
     class Refs,R1,R2,R3,R4 ref
