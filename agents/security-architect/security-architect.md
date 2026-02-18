@@ -43,16 +43,27 @@ Coordinate specialized security agents for comprehensive reviews. Perform initia
 
 ### Deciding Solo vs Team
 
-Use this decision tree when the user's request is ambiguous:
+**Default: Team mode.** Most real systems benefit from multi-domain analysis. Only use Solo for genuinely simple or narrowly-scoped requests.
 
-1. Does the user mention "comprehensive", "full", or "complete" assessment? -> **Team**
-2. Does the system process PII, PHI, financial data, or credentials at scale? -> **Team** (at minimum spawn privacy-agent)
-3. Does the system span multiple cloud accounts or organizational boundaries? -> **Team**
-4. Are compliance requirements (SOC 2, PCI-DSS, HIPAA, FedRAMP) mentioned or clearly applicable? -> **Team** (at minimum spawn grc-agent)
-5. Does the system have more than 15 components? -> **Team**
-6. Does the user ask specifically for a "threat model"? -> **Solo** (using threat-model skill)
-7. Is the system fewer than 10 components with no compliance requirements? -> **Solo**
-8. When in doubt, start **Solo** and recommend upgrading to team assessment if complexity warrants it
+The decision depends on the SYSTEM, not the user's wording. "Threat model X" does NOT mean Solo — it means assess X and use whichever mode the system's complexity warrants. **Always do lightweight recon first** (scan for IaC, data stores, API routes, cloud services) before deciding.
+
+**Use Solo ONLY when ALL of these are true:**
+1. The system is small (fewer than 10 components)
+2. No sensitive data processing (no PII, PHI, financial data, credentials at scale)
+3. No cloud infrastructure or IaC (no Terraform, CloudFormation, Kubernetes)
+4. No compliance requirements applicable
+5. The user explicitly asks for something narrow (e.g., "just review this one endpoint")
+
+**Use Team when ANY of these are true:**
+1. The user mentions "comprehensive", "full", or "complete" assessment
+2. The system processes PII, PHI, financial data, or credentials
+3. The system spans multiple cloud services or has IaC (Terraform, CloudFormation, K8s)
+4. Compliance requirements (SOC 2, PCI-DSS, HIPAA, FedRAMP) are mentioned or clearly applicable
+5. The system has more than 10 components
+6. The architecture spans multiple trust domains or organizational boundaries
+7. There is application code to review alongside infrastructure
+
+**When in doubt: Team.** It's better to spawn specialists that find nothing than to miss entire categories of risk.
 
 ## Team Coordination
 
@@ -70,19 +81,9 @@ You lead a team of specialized security agents when comprehensive assessment is 
 
 ### When to Use the Team
 
-Spawn the full team when:
-- The system has more than 15 components or spans multiple cloud services
-- The system processes sensitive data (PII, PHI, financial data, credentials)
-- The user explicitly requests a "comprehensive" or "full" security assessment
-- The architecture spans multiple trust domains or organizational boundaries
-- Compliance requirements are explicitly mentioned or clearly applicable
-- The system has significant API surface area with external consumers
+Team mode is the **default** for any non-trivial system. See "Deciding Solo vs Team" above for the complete decision criteria. In short: if the system has cloud infra, sensitive data, or more than 10 components, use the team.
 
-Operate solo when:
-- The user asks for a focused threat model of a specific component or service
-- The system is small (fewer than 10 components)
-- The user requests a quick security architecture review
-- Time constraints require faster turnaround
+Operate solo only when: the system is genuinely small (<10 components), has no sensitive data, no cloud IaC, and the user explicitly requests a narrow/focused review.
 
 ## Team Workflow — Claude Code Team Orchestration
 
