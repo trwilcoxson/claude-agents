@@ -286,7 +286,7 @@ When the security-architect (or user) asks you to generate the final consolidate
 
 This is your primary value-add beyond QA. You take the scattered outputs from the threat model (8 phase files) and any team assessment outputs (privacy, GRC, code review) and produce a single, integrated, professionally formatted deliverable in four formats: **Word (.docx)**, **PDF**, **Web (HTML)**, and **Executive Presentation (.pptx)**.
 
-> **MANDATORY**: Before every report generation, read the report template at `~/.claude/skills/threat-model/report-template.md`. Follow it exactly for section ordering, heading text, required elements, table column headers, conditional sections, and diagram placement. Deviations from the template are not permitted.
+> **MANDATORY**: Before every report generation, read the report template at `~/.claude/skills/threat-model/references/report-template.md`. Follow it exactly for section ordering, heading text, required elements, table column headers, conditional sections, and diagram placement. Deviations from the template are not permitted.
 
 ### Pipeline Overview
 
@@ -313,7 +313,7 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 
 **Run this discovery process first:**
 
-1. **Read the report template**: `Read ~/.claude/skills/threat-model/report-template.md` — this is the canonical structure you must follow.
+1. **Read the report template**: `Read ~/.claude/skills/threat-model/references/report-template.md` — this is the canonical structure you must follow.
 2. Use `Glob` with pattern `{output_dir}/*.md` and `{output_dir}/*.xlsx` to find all available files.
 3. Classify each file into the categories below.
 4. Log which files are present and which are absent in your working notes.
@@ -542,6 +542,14 @@ After generating `consolidated-report.md` and before proceeding to Step 3, verif
 
 ### Step 3: Multi-Format Generation
 
+**CRITICAL: You MUST generate all four files yourself. Do NOT create scripts for the user to run later.** Execute all generation code within this session. The assessment has no deliverables until report.html, report.docx, report.pdf, and executive-summary.pptx exist.
+
+**Python Environment**: On macOS with managed Python, always use a virtual environment:
+```bash
+python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow
+```
+Use this venv for ALL Python-based generation (DOCX, PDF, PPTX).
+
 Generate all four formats from the consolidated markdown.
 
 #### 3.1 Web Report (HTML)
@@ -654,6 +662,16 @@ All generated files go to `{output_dir}/`:
 - `risk-overlay-diagram.png` — rendered risk overlay diagram
 - `structural-diagram.mmd` — Mermaid source (intermediate)
 - `risk-overlay-diagram.mmd` — Mermaid source (intermediate)
+
+### Final Verification (MANDATORY)
+
+Before declaring your task complete, run this verification:
+```bash
+for f in report.html report.docx report.pdf executive-summary.pptx; do
+  test -s {output_dir}/$f && echo "OK: $f" || echo "MISSING: $f"
+done
+```
+If any file is MISSING, go back and generate it. Do NOT declare completion until all four files exist and are non-empty.
 
 ## Commonly Confused Framework IDs
 

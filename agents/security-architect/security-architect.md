@@ -146,7 +146,7 @@ TaskCreate(
 TaskCreate(
   subject="QA review and consolidated report generation",
   description="After all other agents complete, consolidate all outputs into final reports in FOUR formats (HTML, DOCX, PDF, PPTX).
-    Read the report template at ~/.claude/skills/threat-model/report-template.md first.
+    Read the report template at ~/.claude/skills/threat-model/references/report-template.md first.
     Follow the template exactly for section ordering and structure.
     Include validation-report.md findings in consolidation.",
   activeForm="Generating consolidated reports"
@@ -346,7 +346,9 @@ While specialist agents work their tasks concurrently, you continue with your ow
 
 3. **Read validation-report.md** (compact summary) to understand what was corrected. Do NOT read raw specialist outputs — the validation report provides the quality summary you need. This prevents context rot from ingesting all specialist outputs.
 
-### Phase D.6: Spawn Report-Analyst
+### Phase D.6: Spawn Report-Analyst (MANDATORY — DO NOT SKIP)
+
+**The assessment is NOT complete until multi-format reports are generated.** Without report.html, report.docx, report.pdf, and executive-summary.pptx, the assessment has no deliverables. This phase is NON-NEGOTIABLE.
 
 **After validation completes.** Task 4 should now be unblocked.
 
@@ -369,49 +371,37 @@ While specialist agents work their tasks concurrently, you continue with your ow
 
        OUTPUT DIRECTORY: {output_dir}/
 
-       FIRST: Read the report template at ~/.claude/skills/threat-model/report-template.md
+       FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md
        Follow the template EXACTLY for section ordering, heading text, table columns, and structure.
 
-       AVAILABLE INPUTS (verify each exists before reading):
-       Required threat model phases:
-       - 01-reconnaissance.md (asset inventory, threat actors, attack surface, security controls)
-       - 02-structural-diagram.md (Mermaid structural DFD)
-       - 03-threat-identification.md (STRIDE-LM threats)
-       - 04-risk-quantification.md (PASTA scoring, OWASP risk ratings)
-       - 05-false-negative-hunting.md (adversarial analysis)
-       - 06-validated-findings.md (deduplicated, confidence-rated findings)
-       - 07-final-diagram.md (risk-overlay Mermaid diagram)
-       - 08-threat-model-report.md (integrated threat model report)
+       Read ALL .md files in {output_dir}/ as your inputs (01-reconnaissance.md through 08-threat-model-report.md, plus any team outputs like privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md).
 
-       Team outputs (include if they exist, skip if they don't):
-       - privacy-assessment.md (from privacy-agent)
-       - compliance-gap-analysis.md (from grc-agent)
-       - code-security-review.md (from code-review-agent)
-       - control-matrix.xlsx (from grc-agent)
-       - validation-report.md (from validation-specialist — cross-agent validation results)
-       - visual-completeness-checklist.md (filled out by security-architect)
+       GENERATE ALL FOUR FORMATS — you have the docx, pdf, pptx, and frontend-design skills:
+       1. report.html — use your frontend-design skill for an interactive web report with Mermaid diagrams, sidebar nav, severity filtering
+       2. report.docx — use your docx skill for a professional Word doc with TOC, cover page, embedded diagrams
+       3. report.pdf — use your pdf skill to convert from Word or generate directly
+       4. executive-summary.pptx — use your pptx skill for a 9-11 slide executive presentation
 
-       GENERATE ALL FOUR FORMATS:
-       1. report.html — interactive web report with inline Mermaid diagrams, sidebar nav, severity filtering, diagram zoom/fullscreen
-       2. report.docx — professional Word doc with TOC, cover page, embedded diagram PNGs
-       3. report.pdf — PDF converted from Word or generated with ReportLab
-       4. executive-summary.pptx — 9-11 slide executive presentation with charts, diagrams, and key findings
-
-       REQUIREMENTS:
-       - Run QA validation first, fix critical issues during consolidation
-       - Deduplicate findings across ALL sources (threat model + privacy + GRC + code review)
-       - Cross-key everything: findings <-> diagrams <-> remediation <-> components <-> threat actors
-       - Include full component metadata (ports, protocols, subnets, security groups, IAM roles)
-       - Include full networking data (VPC topology, CIDRs, firewall rules, LB config)
-       - Embed both Mermaid diagrams in all formats
-       - Run post-generation validation checklist before declaring complete
+       CRITICAL REQUIREMENTS:
+       - You MUST actually generate all four files, not just create scripts. Run generation code yourself.
+       - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install ...
+       - Render Mermaid diagrams to PNG for DOCX/PDF/PPTX embedding (use npx @mermaid-js/mermaid-cli or mermaid.ink API)
+       - Deduplicate findings across all sources
+       - Cross-reference everything: findings <-> diagrams <-> remediation <-> components
        - The project root is {project_root}.
 
-       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='All reports generated', content='Reports generated: report.html, report.docx, report.pdf, executive-summary.pptx, consolidated-report.md')."
+       BEFORE DECLARING DONE: Verify these files exist and are non-empty:
+       ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx
+
+       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='All reports generated', content='Reports generated: report.html, report.docx, report.pdf, executive-summary.pptx')."
    )
    ```
 
-5. **After report-analyst completes**, verify all output files exist and inform the user.
+5. **After report-analyst completes**, verify ALL report files exist:
+   ```bash
+   ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx
+   ```
+   If any files are missing, send a message to the report-generator asking it to complete the missing formats. Do NOT proceed to Phase E until all four files exist.
 
 ### Phase E: Shutdown & Cleanup
 
@@ -489,25 +479,28 @@ Task tool call:
     code-security-review.md) — this was a solo assessment. Skip Sections X and XI
     in the report structure and note in Assumptions that these were not performed.
 
-    FIRST: Read the report template at ~/.claude/skills/threat-model/report-template.md
+    FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md
     Follow the template EXACTLY for section ordering, heading text, table columns, and structure.
 
-    GENERATE ALL FOUR FORMATS:
-    1. report.html — interactive web report with inline Mermaid diagrams, diagram zoom/fullscreen
-    2. report.docx — professional Word doc with TOC, cover page, embedded diagram PNGs
-    3. report.pdf — PDF converted from Word or generated with ReportLab
-    4. executive-summary.pptx — 9-11 slide executive presentation with charts, diagrams, and key findings
+    GENERATE ALL FOUR FORMATS — you have the docx, pdf, pptx, and frontend-design skills:
+    1. report.html — use your frontend-design skill for interactive web report with Mermaid diagrams
+    2. report.docx — use your docx skill for professional Word doc with TOC, cover page, embedded diagrams
+    3. report.pdf — use your pdf skill to convert from Word or generate directly
+    4. executive-summary.pptx — use your pptx skill for 9-11 slide executive presentation
 
-    REQUIREMENTS:
-    - Run QA validation first, fix critical issues during consolidation
+    CRITICAL REQUIREMENTS:
+    - You MUST actually generate all four files, not just create scripts. Run generation code yourself.
+    - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install ...
+    - Render Mermaid diagrams to PNG for DOCX/PDF/PPTX embedding
     - Cross-key everything: findings <-> diagrams <-> remediation <-> components <-> threat actors
-    - Include full component metadata and networking data
-    - Embed both Mermaid diagrams (structural + risk overlay) in all formats
     - Run post-generation validation checklist before declaring complete
-    - The project root is {project_root}."
+    - The project root is {project_root}.
+
+    BEFORE DECLARING DONE: Verify these files exist and are non-empty:
+    ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx"
 ```
 
-After report-analyst completes, inform the user of all generated files:
+After report-analyst completes, verify all four files exist, then inform the user of generated files:
 - `{output_dir}/report.html` — interactive web report (open in browser)
 - `{output_dir}/report.docx` — Word document (editable)
 - `{output_dir}/report.pdf` — PDF (for distribution)
