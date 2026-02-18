@@ -23,6 +23,143 @@ Define `{output_dir}` as `{project_root}/threat-model-output/` unless the user s
 - **Report template**: [references/report-template.md](references/report-template.md) — exact section structure, table formats, and cross-reference rules for Phase 8
 - **Agent output protocol**: [references/agent-output-protocol.md](references/agent-output-protocol.md) — standardized finding format for team assessments
 
+## Assessment Orchestration
+
+This section guides the **parent conversation** (which has all tools: Task, TaskOutput, etc.) through spawning and sequencing agents. No spawned agent handles orchestration — the parent does it all, and every agent runs as a flat peer visible to the user.
+
+### Solo vs Team Decision
+
+**Default: Team mode.** Most real systems benefit from multi-domain analysis. Only use Solo for genuinely simple or narrowly-scoped requests.
+
+The decision depends on the SYSTEM, not the user's wording. "Threat model X" does NOT mean Solo — it means assess X and use whichever mode the system's complexity warrants. **Always do lightweight recon first** (scan for IaC, data stores, API routes, cloud services) before deciding.
+
+**Use Solo ONLY when ALL of these are true:**
+1. The system is small (fewer than 10 components)
+2. No sensitive data processing (no PII, PHI, financial data, credentials at scale)
+3. No cloud infrastructure or IaC (no Terraform, CloudFormation, Kubernetes)
+4. No compliance requirements applicable
+5. The user explicitly asks for something narrow (e.g., "just review this one endpoint")
+
+**Use Team when ANY of these are true:**
+1. The user mentions "comprehensive", "full", or "complete" assessment
+2. The system processes PII, PHI, financial data, or credentials
+3. The system spans multiple cloud services or has IaC (Terraform, CloudFormation, K8s)
+4. Compliance requirements (SOC 2, PCI-DSS, HIPAA, FedRAMP) are mentioned or clearly applicable
+5. The system has more than 10 components
+6. The architecture spans multiple trust domains or organizational boundaries
+7. There is application code to review alongside infrastructure
+
+**When in doubt: Team.** It's better to spawn specialists that find nothing than to miss entire categories of risk.
+
+### Solo Workflow
+
+1. **Create output directory**: `mkdir -p {project_root}/threat-model-output`
+2. **Spawn `security-architect`** (blocking):
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"threat-modeler"`
+   - `prompt`: See [Solo — security-architect prompt](#solo--security-architect-prompt) below
+   - The agent executes all 8 phases and writes `01-reconnaissance.md` through `08-threat-model-report.md`
+3. **Spawn `report-analyst`** (blocking):
+   - `subagent_type`: `"report-analyst"`
+   - `name`: `"report-generator"`
+   - `prompt`: See [Solo — report-analyst prompt](#solo--report-analyst-prompt) below
+
+### Team Workflow
+
+1. **Create output directory**: `mkdir -p {project_root}/threat-model-output`
+
+2. **Spawn `security-architect`** (blocking) — all 8 phases:
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"threat-modeler"`
+   - `prompt`: See [Team — security-architect prompt](#team--security-architect-prompt) below
+   - Wait for completion. The agent writes `01-reconnaissance.md` through `08-threat-model-report.md`.
+
+3. **Spawn 3 specialists in parallel** (`run_in_background: true` on all 3):
+   - **privacy-agent**: `subagent_type`: `"privacy-agent"`, `name`: `"privacy-specialist"` — see [privacy-agent prompt](#team--privacy-agent-prompt)
+   - **grc-agent**: `subagent_type`: `"grc-agent"`, `name`: `"compliance-specialist"` — see [grc-agent prompt](#team--grc-agent-prompt)
+   - **code-review-agent**: `subagent_type`: `"code-review-agent"`, `name`: `"code-security-specialist"` — see [code-review-agent prompt](#team--code-review-agent-prompt)
+
+4. **Wait for all 3**: Call `TaskOutput(task_id=..., block=true)` for each background agent's task ID.
+
+5. **Spawn `general-purpose`** (blocking) as validation-specialist:
+   - `subagent_type`: `"general-purpose"`
+   - `name`: `"validation-specialist"`
+   - `prompt`: See [validation-specialist prompt](#team--validation-specialist-prompt)
+   - Reads all outputs, writes `validation-report.md`.
+
+6. **Spawn `report-analyst`** (blocking):
+   - `subagent_type`: `"report-analyst"`
+   - `name`: `"report-generator"`
+   - `prompt`: See [Team — report-analyst prompt](#team--report-analyst-prompt)
+
+### Spawn Parameter Templates
+
+Substitute `{output_dir}` and `{project_root}` with actual paths in all prompts below.
+
+#### Solo — security-architect prompt
+
+> You are performing a solo threat model assessment. Execute all 8 phases of the threat-model skill against the project at {project_root}. Write all outputs to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — follow it phase by phase, writing 01-reconnaissance.md through 08-threat-model-report.md. Be thorough and methodical.
+
+#### Solo — report-analyst prompt
+
+> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS: 01-reconnaissance.md through 08-threat-model-report.md. No team agents ran — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that privacy and compliance assessments were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+
+#### Team — security-architect prompt
+
+> You are performing the threat modeling portion of a team security assessment. Execute all 8 phases of the threat-model skill against the project at {project_root}. Write all outputs to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — follow it phase by phase, writing 01-reconnaissance.md through 08-threat-model-report.md. Be thorough — specialist agents (privacy, compliance, code review) will read your 01-reconnaissance.md to understand the system. The parent conversation handles all orchestration.
+
+#### Team — privacy-agent prompt
+
+> Perform a full privacy impact assessment for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Write your output to {output_dir}/privacy-assessment.md. Include: data inventory, LINDDUN analysis, regulatory implications (GDPR, CCPA, HIPAA as applicable), privacy-specific recommendations.
+
+#### Team — grc-agent prompt
+
+> Perform compliance gap analysis for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Write your report to {output_dir}/compliance-gap-analysis.md. Include: framework coverage (SOC 2, PCI-DSS, HIPAA, ISO 27001, NIST CSF as applicable), control mapping, gap analysis, remediation roadmap.
+
+#### Team — code-review-agent prompt
+
+> Perform a targeted code security review for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system and identify high-risk components. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Focus on the top 3-5 highest-risk files/components identified in the reconnaissance. Write your findings to {output_dir}/code-security-review.md. Use CVSS v3.1 scoring. Include code evidence for every finding.
+
+#### Team — validation-specialist prompt
+
+> You are the validation specialist. Read your full instructions from ~/.claude/agents/validation-specialist.md. Read ALL assessment outputs in {output_dir}/: the 8 threat model phases (01-08), plus privacy-assessment.md, compliance-gap-analysis.md, and code-security-review.md. Also read the visual completeness checklist at {output_dir}/visual-completeness-checklist.md. Reference files are at ~/.claude/skills/threat-model/references/ (frameworks.md, agent-output-protocol.md, mermaid-spec.md, mermaid-layers.md). Perform all 7 validation steps from your instructions. Write {output_dir}/validation-report.md with all findings. The project root is {project_root}.
+
+#### Team — report-analyst prompt
+
+> Generate the consolidated security assessment report from ALL outputs. OUTPUT DIRECTORY: {output_dir}/. Read ALL .md files in {output_dir}/ as inputs (01-reconnaissance.md through 08-threat-model-report.md, plus privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Apply corrections from validation-report.md. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+
+### Post-Assessment Verification
+
+After the report-analyst completes, verify all expected files exist and are non-empty:
+
+```bash
+# Core threat model outputs
+for f in 01-reconnaissance.md 02-structural-diagram.md 03-threat-identification.md \
+         04-risk-quantification.md 05-false-negative-hunting.md 06-validated-findings.md \
+         07-final-diagram.md 08-threat-model-report.md; do
+  test -s "{output_dir}/$f" && echo "OK: $f" || echo "MISSING: $f"
+done
+
+# Report deliverables
+for f in report.html report.docx report.pdf executive-summary.pptx; do
+  test -s "{output_dir}/$f" && echo "OK: $f ($(wc -c < "{output_dir}/$f") bytes)" || echo "MISSING: $f"
+done
+
+# Team outputs (if team mode)
+for f in privacy-assessment.md compliance-gap-analysis.md code-security-review.md \
+         validation-report.md; do
+  test -s "{output_dir}/$f" 2>/dev/null && echo "OK: $f" || echo "NOT PRESENT: $f (expected in team mode only)"
+done
+```
+
+If any report deliverables are missing, re-spawn the report-analyst to complete them. If any core threat model outputs are missing, investigate and report to the user.
+
+Inform the user of generated files:
+- `{output_dir}/report.html` — interactive web report (open in browser)
+- `{output_dir}/report.docx` — Word document (editable)
+- `{output_dir}/report.pdf` — PDF (for distribution)
+- `{output_dir}/executive-summary.pptx` — executive presentation (for leadership)
+
 ## Phase 1 — Reconnaissance
 
 Gather complete system understanding before any analysis. Do not form threat hypotheses yet — this phase is purely observational.

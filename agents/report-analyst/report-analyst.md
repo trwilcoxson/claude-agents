@@ -319,8 +319,9 @@ Before doing anything, discover what inputs are available. Not all agents may ha
 
 1. **Read the report template**: `Read ~/.claude/skills/threat-model/references/report-template.md` — this is the canonical structure you must follow.
 2. Use `Glob` with pattern `{output_dir}/*.md` and `{output_dir}/*.xlsx` to find all available files.
-3. Classify each file into the categories below.
-4. Log which files are present and which are absent in your working notes.
+3. **Check for validation-report.md**: If `{output_dir}/validation-report.md` exists, read it. This contains cross-agent validation results (deduplication decisions, false positive candidates, severity conflict resolutions, framework ID corrections, confidence escalations). Apply all documented corrections during the consolidation step (Step 2).
+4. Classify each file into the categories below.
+5. Log which files are present and which are absent in your working notes.
 
 **Required inputs (MUST exist — abort if missing):**
 | File | Source | Contains |
