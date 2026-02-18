@@ -37,39 +37,76 @@ The system transforms a codebase or architecture description into a comprehensiv
 
 All agents are spawned as **flat peers by the parent conversation**. No agent spawns other agents. The parent conversation reads the skill file (SKILL.md), which contains the orchestration logic, and uses its full tool access (Task, TaskOutput, etc.) to manage the pipeline.
 
+```mermaid
+flowchart TB
+    User(["User: Run a threat model"])
+
+    subgraph Parent["Parent Conversation — Full Tool Access"]
+        direction TB
+        SKILL["<b>SKILL.md</b><br/>Orchestration Guide<br/>+ 8-Phase Methodology"]
+        Decide{"Solo or<br/>Team?"}
+        SKILL --> Decide
+    end
+
+    subgraph Specialists["Specialist Agents — Flat Peers"]
+        direction LR
+        SA["<b>security-architect</b><br/><i>Phases 1-8</i><br/>STRIDE-LM, PASTA<br/>Mermaid DFDs"]
+        PA["<b>privacy-agent</b><br/><i>PIA, LINDDUN</i><br/>GDPR, CCPA, HIPAA"]
+        GRC["<b>grc-agent</b><br/><i>Compliance Mapping</i><br/>SOC 2, PCI-DSS, NIST"]
+        CR["<b>code-review-agent</b><br/><i>CVSS v3.1</i><br/>Code Evidence"]
+    end
+
+    subgraph PostProcess["Post-Processing — Sequential"]
+        direction LR
+        VS["<b>validation-specialist</b><br/><i>Deduplication</i><br/>Framework ID Verify<br/>Severity Consistency"]
+        RA["<b>report-analyst</b><br/><i>QA Review</i><br/>HTML, DOCX, PDF, PPTX"]
+        VS --> RA
+    end
+
+    subgraph FS["Shared Filesystem: threat-model-output/"]
+        direction LR
+        Phases["01-08<br/>Phase Files"]
+        TeamOut["privacy-assessment.md<br/>compliance-gap-analysis.md<br/>code-security-review.md"]
+        ValOut["validation-report.md"]
+        Reports["report.html<br/>report.docx<br/>report.pdf<br/>executive-summary.pptx"]
+    end
+
+    subgraph Refs["Reference Files — Institutional Knowledge"]
+        direction LR
+        R1["<b>frameworks.md</b><br/>STRIDE-LM, MITRE<br/>CWE, OWASP"]
+        R2["<b>mermaid-spec.md</b><br/>+ 4 diagram refs"]
+        R3["<b>report-template.md</b><br/>Sections I-XIV"]
+        R4["<b>agent-output-</b><br/><b>protocol.md</b>"]
+    end
+
+    User --> Parent
+    Parent -->|"spawns all agents"| Specialists
+    Parent -->|"spawns sequentially"| PostProcess
+    Specialists -->|"write"| FS
+    PostProcess -->|"read all, write"| FS
+    Specialists -.->|"consult"| Refs
+    PostProcess -.->|"consult"| Refs
+
+    classDef parent fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
+    classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
+    classDef fs fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
+    classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
+    classDef user fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e
+
+    class Parent parent
+    class SA,PA,GRC,CR agent
+    class VS,RA post
+    class FS,Phases,TeamOut,ValOut,Reports fs
+    class Refs,R1,R2,R3,R4 ref
+    class User user
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Parent Conversation                    │
-│                                                         │
-│  Has: All tools (Task, TaskOutput, Read, Write, etc.)   │
-│  Reads: SKILL.md (orchestration guide)                  │
-│  Decides: Solo vs Team mode                             │
-│  Spawns: All agents directly                            │
-│                                                         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │ security │ │ privacy  │ │   grc    │ │  code    │  │
-│  │ architect│ │  agent   │ │  agent   │ │  review  │  │
-│  │          │ │          │ │          │ │  agent   │  │
-│  │ Phases   │ │ PIA      │ │ Comply   │ │ CVSS     │  │
-│  │ 1-8      │ │ LINDDUN  │ │ mapping  │ │ vulns    │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│       │             │            │             │         │
-│       ▼             ▼            ▼             ▼         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │              {output_dir}/ (shared filesystem)   │    │
-│  │  01-08 phases, privacy, compliance, code-review  │    │
-│  └──────────────────────┬──────────────────────────┘    │
-│                         │                                │
-│                         ▼                                │
-│  ┌──────────────┐  ┌──────────────┐                     │
-│  │  validation  │  │   report     │                     │
-│  │  specialist  │→ │   analyst    │                     │
-│  │              │  │              │                     │
-│  │  Dedup,      │  │  HTML, DOCX  │                     │
-│  │  verify IDs  │  │  PDF, PPTX   │                     │
-│  └──────────────┘  └──────────────┘                     │
-└─────────────────────────────────────────────────────────┘
-```
+
+<details>
+<summary>PNG fallback (if Mermaid doesn't render)</summary>
+
+![System Architecture](diagrams/system-architecture.png)
+</details>
 
 ### Component Inventory
 
@@ -306,7 +343,86 @@ Generating all four from the same consolidated source ensures consistency across
 
 ---
 
-## 5. File Layout
+## 5. File Layout and Component Relationships
+
+```mermaid
+flowchart LR
+    subgraph Skill["Skill: threat-model"]
+        direction TB
+        SKILL["<b>SKILL.md</b><br/>8 phases + orchestration"]
+
+        subgraph RefFiles["references/ — 11 files"]
+            direction TB
+            FW["<b>frameworks.md</b><br/>STRIDE-LM, PASTA, MITRE,<br/>CWE, OWASP lookups"]
+            AOP["<b>agent-output-protocol.md</b><br/>Standardized finding format"]
+            RT["<b>report-template.md</b><br/>Sections I-XIV structure"]
+            AC["<b>analysis-checklists.md</b><br/>Per-phase completeness"]
+            VCC["<b>visual-completeness-checklist.md</b><br/>26 diagram categories"]
+
+            subgraph MermaidRefs["Mermaid Diagram System — 6 files"]
+                direction LR
+                MS["mermaid-spec.md<br/><i>Symbols, edges, classDefs</i>"]
+                ML["mermaid-layers.md<br/><i>4-layer separation</i>"]
+                MD["mermaid-diagrams.md<br/><i>Attack trees, auth seq</i>"]
+                MT["mermaid-templates.md<br/><i>Starter patterns</i>"]
+                MRC["mermaid-review-checklist.md"]
+                MC["mermaid-config.json<br/><i>Rendering theme</i>"]
+            end
+        end
+    end
+
+    subgraph Agents["Agent Definitions — ~/.claude/agents/"]
+        direction TB
+        SA["<b>security-architect.md</b><br/>Type: security-architect<br/>Tools: Bash, Read, Write, Edit, Grep, Glob<br/>Skills: threat-model"]
+        RA["<b>report-analyst.md</b><br/>Type: report-analyst<br/>Tools: Read, Grep, Glob, Write, Edit, Bash<br/>Skills: docx, pdf, pptx, frontend-design"]
+        CR["<b>code-review-agent.md</b><br/>Type: code-review-agent"]
+        PA["<b>privacy-agent.md</b><br/>Type: privacy-agent"]
+        GRC["<b>grc-agent.md</b><br/>Type: grc-agent"]
+        VS["<b>validation-specialist.md</b><br/><i>No built-in type</i><br/>Spawned as: general-purpose"]
+    end
+
+    subgraph Output["Output: threat-model-output/"]
+        direction TB
+        P["<b>8 Phase Files</b><br/>01-reconnaissance.md<br/>through<br/>08-threat-model-report.md"]
+        T["<b>Team Outputs</b><br/>privacy-assessment.md<br/>compliance-gap-analysis.md<br/>code-security-review.md<br/>validation-report.md"]
+        R["<b>Report Deliverables</b><br/>report.html<br/>report.docx<br/>report.pdf<br/>executive-summary.pptx"]
+    end
+
+    SA -->|"writes"| P
+    PA -->|"writes"| T
+    GRC -->|"writes"| T
+    CR -->|"writes"| T
+    VS -->|"writes"| T
+    RA -->|"generates"| R
+
+    SA -.->|"follows"| SKILL
+    SA -.->|"consults"| RefFiles
+    RA -.->|"follows"| RT
+    VS -.->|"verifies against"| FW
+    VS -.->|"checks"| AOP
+
+    classDef skill fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
+    classDef ref fill:#fff1f2,stroke:#f43f5e,stroke-width:1px,color:#881337
+    classDef mermaid fill:#fce7f3,stroke:#ec4899,stroke-width:1px,color:#831843
+    classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef special fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
+    classDef output fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
+
+    class Skill skill
+    class RefFiles,FW,AOP,RT,AC,VCC ref
+    class MermaidRefs,MS,ML,MD,MT,MRC,MC mermaid
+    class SA,RA,CR,PA,GRC agent
+    class VS special
+    class Output,P,T,R output
+```
+
+<details>
+<summary>PNG fallback (if Mermaid doesn't render)</summary>
+
+![Component Map](diagrams/component-map.png)
+</details>
+
+### Directory Tree
 
 ```
 ~/.claude/
@@ -340,89 +456,56 @@ Generating all four from the same consolidated source ensures consistency across
 
 ## 6. Data Flow
 
-### Team Mode (Full Pipeline)
+### Both Paths (Solo + Team)
 
+```mermaid
+flowchart TD
+    Start(["User Request"]) --> Recon["Parent does lightweight recon<br/><i>Glob/Grep for IaC, APIs, data stores</i>"]
+    Recon --> Mode{"Solo or Team?"}
+
+    Mode -->|"Small system,<br/>no sensitive data,<br/>no IaC"| Solo_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
+    Solo_SA -->|"writes 01-08.md"| Solo_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Generate 4 formats"]
+    Solo_RA --> Solo_Done(["Solo Complete<br/><b>report.html, .docx, .pdf, .pptx</b>"])
+
+    Mode -->|"Complex system,<br/>PII/PHI, cloud IaC,<br/>compliance needs"| Team_SA["<b>security-architect</b><br/><i>blocking</i><br/>All 8 phases"]
+
+    Team_SA -->|"writes 01-08.md<br/>(specialists read 01)"| Fork["Parent spawns<br/>3 agents in parallel"]
+
+    Fork --> PA["<b>privacy-agent</b><br/><i>background</i>"]
+    Fork --> GRC["<b>grc-agent</b><br/><i>background</i>"]
+    Fork --> CR["<b>code-review-agent</b><br/><i>background</i>"]
+
+    PA -->|"privacy-assessment.md"| Join["Parent waits for all 3<br/><i>TaskOutput, block=true</i>"]
+    GRC -->|"compliance-gap-analysis.md"| Join
+    CR -->|"code-security-review.md"| Join
+
+    Join --> VS["<b>validation-specialist</b><br/><i>blocking, as general-purpose</i><br/>Dedup, verify IDs,<br/>severity consistency"]
+
+    VS -->|"validation-report.md"| Team_RA["<b>report-analyst</b><br/><i>blocking</i><br/>QA + Consolidate +<br/>Generate 4 formats"]
+
+    Team_RA --> Team_Done(["Team Complete<br/><b>report.html, .docx, .pdf, .pptx</b>"])
+
+    Solo_Done --> Verify["Parent verifies all files<br/>exist and are non-empty"]
+    Team_Done --> Verify
+
+    classDef start fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e
+    classDef decision fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    classDef agent fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px,color:#14532d
+    classDef post fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px,color:#78350f
+    classDef control fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#581c87
+
+    class Start,Solo_Done,Team_Done,Verify start
+    class Mode decision
+    class Solo_SA,Team_SA,PA,GRC,CR,Solo_RA,Team_RA agent
+    class Fork,Join control
+    class VS post
 ```
-                          ┌──────────────────┐
-                          │   User Request    │
-                          └────────┬─────────┘
-                                   │
-                          ┌────────▼─────────┐
-                          │  Parent loads     │
-                          │  SKILL.md         │
-                          │  (orchestration)  │
-                          └────────┬─────────┘
-                                   │
-                          ┌────────▼─────────┐
-                          │  Lightweight      │
-                          │  recon (Glob/     │
-                          │  Grep for IaC,    │
-                          │  APIs, data)      │
-                          └────────┬─────────┘
-                                   │
-                          ┌────────▼─────────┐
-                          │  Decide: Team     │
-                          │  (default) or     │
-                          │  Solo             │
-                          └────────┬─────────┘
-                                   │
-                    ┌──────────────▼──────────────┐
-                    │   Spawn security-architect   │
-                    │   (blocking)                 │
-                    │                              │
-                    │   Executes phases 1-8        │
-                    │   Writes 01-08.md files      │
-                    └──────────────┬──────────────┘
-                                   │
-              ┌────────────────────┼────────────────────┐
-              │                    │                    │
-    ┌─────────▼──────┐  ┌────────▼───────┐  ┌────────▼───────┐
-    │  privacy-agent  │  │   grc-agent    │  │ code-review    │
-    │  (background)   │  │  (background)  │  │    -agent      │
-    │                 │  │                │  │  (background)  │
-    │  Reads: 01.md   │  │  Reads: 01.md  │  │  Reads: 01.md  │
-    │  Writes:        │  │  Writes:       │  │  Writes:       │
-    │  privacy-       │  │  compliance-   │  │  code-security │
-    │  assessment.md  │  │  gap-          │  │  -review.md    │
-    │                 │  │  analysis.md   │  │                │
-    └────────┬────────┘  └───────┬────────┘  └───────┬────────┘
-             │                   │                    │
-             └───────────────────┼────────────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │  Parent waits for all 3  │
-                    │  (TaskOutput, block=true) │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │  Spawn validation-       │
-                    │  specialist (blocking)   │
-                    │  as general-purpose      │
-                    │                          │
-                    │  Reads: ALL outputs      │
-                    │  Writes: validation-     │
-                    │  report.md               │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │  Spawn report-analyst    │
-                    │  (blocking)              │
-                    │                          │
-                    │  Reads: ALL outputs +    │
-                    │  validation-report.md    │
-                    │  Generates:              │
-                    │  report.html             │
-                    │  report.docx             │
-                    │  report.pdf              │
-                    │  executive-summary.pptx  │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │  Parent verifies all     │
-                    │  files exist, reports    │
-                    │  to user                 │
-                    └─────────────────────────┘
-```
+
+<details>
+<summary>PNG fallback (if Mermaid doesn't render)</summary>
+
+![Pipeline Flow](diagrams/pipeline-flow.png)
+</details>
 
 ---
 
