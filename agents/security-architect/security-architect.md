@@ -193,61 +193,48 @@ TaskUpdate(taskId="4", owner="report-generator")
 TaskUpdate(taskId="5", owner="validation-specialist")
 ```
 
-**Step 4 — Spawn all 3 specialist agents in a SINGLE message** (parallel execution):
+**Step 4 — YOU MUST SPAWN 3 AGENTS NOW**
 
-```
-# All three Task tool calls in ONE message:
+⚠️ **CRITICAL**: You have the `Task` tool. You MUST call it 3 times in a SINGLE message to spawn 3 agents in parallel. These are REAL tool calls you must execute — not pseudocode. If you do not call the Task tool here, the assessment will fail.
 
-Task(
-  subagent_type="privacy-agent",
-  team_name="security-assessment",
-  name="privacy-specialist",
-  prompt="You are part of a security assessment team.
-    TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
-    TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress').
+**DO NOT** do the privacy, compliance, or code review work yourself. You are the orchestrator. The specialist agents do the specialist work. Your job is to SPAWN them.
 
-    Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system.
-    Perform a full privacy impact assessment.
-    Write your output to {output_dir}/privacy-assessment.md.
-    The project root is {project_root}.
+**DO NOT** skip this step. **DO NOT** say "I'll handle this myself." **DO NOT** proceed to Phase C without having received 3 agent IDs back from 3 Task tool calls.
 
-    WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Privacy assessment complete', content='Privacy assessment written to {output_dir}/privacy-assessment.md. [summary of key findings]')."
-)
+In your NEXT message, make exactly 3 Task tool calls with these parameters:
 
-Task(
-  subagent_type="grc-agent",
-  team_name="security-assessment",
-  name="compliance-specialist",
-  prompt="You are part of a security assessment team.
-    TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
-    TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress').
+**Agent 1 — Privacy specialist:**
+- `subagent_type`: "privacy-agent"
+- `team_name`: "security-assessment"
+- `name`: "privacy-specialist"
+- `prompt`: (see below)
 
-    Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system.
-    Perform compliance gap analysis against applicable frameworks.
-    Write your report to {output_dir}/compliance-gap-analysis.md.
-    Also produce {output_dir}/control-matrix.xlsx if xlsx skill is available.
-    The project root is {project_root}.
+**Agent 2 — Compliance specialist:**
+- `subagent_type`: "grc-agent"
+- `team_name`: "security-assessment"
+- `name`: "compliance-specialist"
+- `prompt`: (see below)
 
-    WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Compliance analysis complete', content='Compliance gap analysis written to {output_dir}/compliance-gap-analysis.md. [summary of key gaps]')."
-)
+**Agent 3 — Code security specialist:**
+- `subagent_type`: "code-review-agent"
+- `team_name`: "security-assessment"
+- `name`: "code-security-specialist"
+- `prompt`: (see below)
 
-Task(
-  subagent_type="code-review-agent",
-  team_name="security-assessment",
-  name="code-security-specialist",
-  prompt="You are part of a security assessment team.
-    TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
-    TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress').
+**Prompt templates** — substitute `{output_dir}` and `{project_root}` with actual paths:
 
-    Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system and threat landscape.
-    Perform targeted code security review of these high-risk files: {list files from recon}
-    Focus on STRIDE-LM categories relevant to each component.
-    Write your findings to {output_dir}/code-security-review.md.
-    The project root is {project_root}.
+Privacy specialist prompt:
+> You are part of a security assessment team. TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates. TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress'). Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Perform a full privacy impact assessment. Write your output to {output_dir}/privacy-assessment.md. The project root is {project_root}. WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Privacy assessment complete', content='Privacy assessment written to {output_dir}/privacy-assessment.md. [summary of key findings]').
 
-    WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Code security review complete', content='Code security review written to {output_dir}/code-security-review.md. [summary of critical findings]')."
-)
-```
+Compliance specialist prompt:
+> You are part of a security assessment team. TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates. TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress'). Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Perform compliance gap analysis against applicable frameworks. Write your report to {output_dir}/compliance-gap-analysis.md. Also produce {output_dir}/control-matrix.xlsx if xlsx skill is available. The project root is {project_root}. WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Compliance analysis complete', content='Compliance gap analysis written to {output_dir}/compliance-gap-analysis.md. [summary of key gaps]').
+
+Code security specialist prompt:
+> You are part of a security assessment team. TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates. TASK AWARENESS: Call TaskList to find your assigned task, then TaskUpdate(taskId=YOUR_TASK, status='in_progress'). Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system and threat landscape. Perform targeted code security review of these high-risk files: {list files from recon}. Focus on STRIDE-LM categories relevant to each component. Write your findings to {output_dir}/code-security-review.md. The project root is {project_root}. WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Code security review complete', content='Code security review written to {output_dir}/code-security-review.md. [summary of critical findings]').
+
+**Step 4b — VERIFY YOU SPAWNED AGENTS**: After calling Task 3 times, confirm you received 3 agent IDs back. If you did NOT spawn agents, STOP and report the error — do not continue.
+
+**HARD PROHIBITION**: You must NEVER write privacy-assessment.md, compliance-gap-analysis.md, or code-security-review.md yourself. These files MUST be produced by spawned specialist agents. If you find yourself writing these files, you have made an error — stop and spawn the agents instead.
 
 ### Phase C: Parallel Execution & Monitoring
 
@@ -291,57 +278,16 @@ While specialist agents work their tasks concurrently, you continue with your ow
 
 **After all specialists complete but BEFORE report-analyst.** The validation-specialist cross-validates all outputs, deduplicates findings, and sends corrections to specialists.
 
-1. **Update Task 5 to in_progress and spawn validation-specialist**:
-   ```
-   TaskUpdate(taskId="5", status="in_progress")
-   ```
+1. **Update Task 5 to in_progress**: Call TaskUpdate with taskId="5" and status="in_progress".
 
-   Then spawn:
-   ```
-   Task(
-     subagent_type="validation-specialist",
-     team_name="security-assessment",
-     name="validation-specialist",
-     prompt="You are the validation specialist in a security assessment team.
-       TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
-       TASK AWARENESS: Call TaskList, find your task (Task 5), TaskUpdate(taskId=YOUR_TASK, status='in_progress').
+2. **YOU MUST SPAWN the validation-specialist NOW** by calling the Task tool with these parameters:
+   - `subagent_type`: "general-purpose"
+   - `team_name`: "security-assessment"
+   - `name`: "validation-specialist"
+   - `prompt`: (substitute `{output_dir}` and `{project_root}` with actual paths)
 
-       Read ALL specialist outputs in {output_dir}/:
-       - 01-08 threat model phases (from security-architect)
-       - privacy-assessment.md (from privacy-specialist)
-       - compliance-gap-analysis.md (from compliance-specialist)
-       - code-security-review.md (from code-security-specialist)
-
-       Read the visual completeness checklist:
-       {output_dir}/visual-completeness-checklist.md
-
-       Read the agent output protocol:
-       ~/.claude/skills/threat-model/references/agent-output-protocol.md
-
-       Read framework references:
-       ~/.claude/skills/threat-model/references/frameworks.md
-
-       Read mermaid conventions:
-       ~/.claude/skills/threat-model/references/mermaid-conventions.md
-
-       PERFORM VALIDATION:
-       1. Cross-agent finding deduplication
-       2. False positive detection (CRITICAL/HIGH findings)
-       3. Severity consistency across agents
-       4. Visual completeness verification (20 categories against diagrams)
-       5. Framework ID verification against references/frameworks.md
-       6. Confidence escalation for independently-flagged issues
-       7. Agent output protocol compliance check
-
-       FEEDBACK LOOPS: If you find critical issues, SendMessage the responsible agent
-       with specific corrections. Wait for response. Max 2 rounds per finding.
-
-       Write {output_dir}/validation-report.md with all findings.
-       The project root is {project_root}.
-
-       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Validation complete', content='Validation report written to {output_dir}/validation-report.md. [summary of key findings]')."
-   )
-   ```
+   Validation specialist prompt:
+   > You are the validation specialist in a security assessment team. TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates. TASK AWARENESS: Call TaskList, find your task, TaskUpdate(taskId=YOUR_TASK, status='in_progress'). Read ALL specialist outputs in {output_dir}/: 01-08 threat model phases, privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md. Read the visual completeness checklist: {output_dir}/visual-completeness-checklist.md. Read the agent output protocol: ~/.claude/skills/threat-model/references/agent-output-protocol.md. Read framework references: ~/.claude/skills/threat-model/references/frameworks.md. Read mermaid conventions: ~/.claude/skills/threat-model/references/mermaid-conventions.md. PERFORM VALIDATION: 1. Cross-agent finding deduplication 2. False positive detection (CRITICAL/HIGH findings) 3. Severity consistency across agents 4. Visual completeness verification (20 categories against diagrams) 5. Framework ID verification against references/frameworks.md 6. Confidence escalation for independently-flagged issues 7. Agent output protocol compliance check. FEEDBACK LOOPS: If you find critical issues, SendMessage the responsible agent with specific corrections. Wait for response. Max 2 rounds per finding. Write {output_dir}/validation-report.md with all findings. The project root is {project_root}. WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='Validation complete', content='Validation report written to {output_dir}/validation-report.md. [summary of key findings]').
 
 2. **Wait for validation-specialist to complete** (Task 5 status → completed).
 
@@ -353,51 +299,16 @@ While specialist agents work their tasks concurrently, you continue with your ow
 
 **After validation completes.** Task 4 should now be unblocked.
 
-4. **Update Task 4 to in_progress and spawn report-analyst**:
-   ```
-   TaskUpdate(taskId="4", status="in_progress")
-   ```
+4. **Update Task 4 to in_progress**: Call TaskUpdate with taskId="4" and status="in_progress".
 
-   Then spawn:
-   ```
-   Task(
-     subagent_type="report-analyst",
-     team_name="security-assessment",
-     name="report-generator",
-     prompt="You are the final agent in a security assessment team. All analysis is complete.
-       Your job: consolidate all outputs into a single integrated report in FOUR formats.
+5. **YOU MUST SPAWN the report-analyst NOW** by calling the Task tool with these parameters:
+   - `subagent_type`: "report-analyst"
+   - `team_name`: "security-assessment"
+   - `name`: "report-generator"
+   - `prompt`: (substitute `{output_dir}` and `{project_root}` with actual paths)
 
-       TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates.
-       TASK AWARENESS: Call TaskList to find your assigned task (Task 4).
-
-       OUTPUT DIRECTORY: {output_dir}/
-
-       FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md
-       Follow the template EXACTLY for section ordering, heading text, table columns, and structure.
-
-       Read ALL .md files in {output_dir}/ as your inputs (01-reconnaissance.md through 08-threat-model-report.md, plus any team outputs like privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md).
-
-       You have Bash access. GENERATE ALL FOUR FORMATS — use your docx, pdf, pptx, and frontend-design skills:
-       1. report.html — use your frontend-design skill for an interactive web report with Mermaid diagrams, sidebar nav, severity filtering
-       2. report.docx — use your docx skill for a professional Word doc with TOC, cover page, embedded diagrams
-       3. report.pdf — use your pdf skill to convert from Word or generate directly
-       4. executive-summary.pptx — use your pptx skill for a 9-11 slide executive presentation
-
-       CRITICAL REQUIREMENTS:
-       - You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash.
-       - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow
-       - Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -w 2000 -b white (do NOT use mmdc as subcommand)
-       - Pre-process .mmd files: strip ~~> wavy arrows and note directives before rendering
-       - Deduplicate findings across all sources
-       - Cross-reference everything: findings <-> diagrams <-> remediation <-> components
-       - The project root is {project_root}.
-
-       BEFORE DECLARING DONE: Verify all files exist and are non-empty:
-       ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx {output_dir}/structural-diagram.png {output_dir}/risk-overlay-diagram.png
-
-       WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='All reports generated', content='Reports generated: report.html, report.docx, report.pdf, executive-summary.pptx, structural-diagram.png, risk-overlay-diagram.png')."
-   )
-   ```
+   Report-analyst prompt:
+   > You are the final agent in a security assessment team. All analysis is complete. Your job: consolidate all outputs into a single integrated report in FOUR formats. TEAM DISCOVERY: Read ~/.claude/teams/security-assessment/config.json to find your teammates. TASK AWARENESS: Call TaskList to find your assigned task. OUTPUT DIRECTORY: {output_dir}/. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY for section ordering, heading text, table columns, and structure. Read ALL .md files in {output_dir}/ as your inputs (01-reconnaissance.md through 08-threat-model-report.md, plus any team outputs like privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html — interactive web report with Mermaid diagrams, sidebar nav, severity filtering 2. report.docx — professional Word doc with TOC, cover page, embedded diagrams 3. report.pdf — convert from Word or generate directly 4. executive-summary.pptx — 9-11 slide executive presentation. CRITICAL REQUIREMENTS: You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Cross-reference everything: findings to diagrams to remediation to components. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty: ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx {output_dir}/structural-diagram.png {output_dir}/risk-overlay-diagram.png. WHEN DONE: TaskUpdate(taskId=YOUR_TASK, status='completed') then SendMessage(type='message', recipient='security-architect', summary='All reports generated', content='Reports generated: report.html, report.docx, report.pdf, executive-summary.pptx, structural-diagram.png, risk-overlay-diagram.png').
 
 5. **After report-analyst completes**, verify ALL report files exist:
    ```bash
@@ -466,44 +377,15 @@ Phase E: SendMessage(shutdown_request) x5 → wait for confirmations → TeamDel
 
 ## Solo Mode Report Generation
 
-After completing all 8 threat model phases in solo mode, spawn report-analyst directly (no team needed):
+After completing all 8 threat model phases in solo mode, **YOU MUST SPAWN the report-analyst NOW** by calling the Task tool with these parameters:
+- `subagent_type`: "report-analyst"
+- `name`: "report-generator"
+- `prompt`: (substitute `{output_dir}` and `{project_root}` with actual paths)
 
-```
-Task tool call:
-  subagent_type: "report-analyst"
-  name: "report-generator"
-  prompt: "Generate the consolidated security assessment report from the threat model outputs.
+Solo report-analyst prompt:
+> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS (all from threat model — no team agents ran): 01-reconnaissance.md through 08-threat-model-report.md. No team outputs exist (privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md) — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that these were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY for section ordering, heading text, table columns, and structure. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html — interactive web report with Mermaid diagrams 2. report.docx — professional Word doc with TOC, cover page, embedded diagrams 3. report.pdf — convert from Word or generate directly 4. executive-summary.pptx — 9-11 slide executive presentation. CRITICAL REQUIREMENTS: You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Cross-reference everything: findings to diagrams to remediation to components to threat actors. Run post-generation validation checklist before declaring complete. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty: ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx.
 
-    OUTPUT DIRECTORY: {output_dir}/
-
-    AVAILABLE INPUTS (all from threat model — no team agents ran):
-    - 01-reconnaissance.md through 08-threat-model-report.md
-
-    No team outputs exist (privacy-assessment.md, compliance-gap-analysis.md,
-    code-security-review.md) — this was a solo assessment. Skip Sections X and XI
-    in the report structure and note in Assumptions that these were not performed.
-
-    FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md
-    Follow the template EXACTLY for section ordering, heading text, table columns, and structure.
-
-    You have Bash access. GENERATE ALL FOUR FORMATS — use your docx, pdf, pptx, and frontend-design skills:
-    1. report.html — use your frontend-design skill for interactive web report with Mermaid diagrams
-    2. report.docx — use your docx skill for professional Word doc with TOC, cover page, embedded diagrams
-    3. report.pdf — use your pdf skill to convert from Word or generate directly
-    4. executive-summary.pptx — use your pptx skill for 9-11 slide executive presentation
-
-    CRITICAL REQUIREMENTS:
-    - You MUST actually generate all four files, not just create scripts. Execute generation code yourself using Bash.
-    - When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow
-    - Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -w 2000 -b white (do NOT use mmdc as subcommand)
-    - Pre-process .mmd files: strip ~~> wavy arrows and note directives before rendering
-    - Cross-key everything: findings <-> diagrams <-> remediation <-> components <-> threat actors
-    - Run post-generation validation checklist before declaring complete
-    - The project root is {project_root}.
-
-    BEFORE DECLARING DONE: Verify all files exist and are non-empty:
-    ls -la {output_dir}/report.html {output_dir}/report.docx {output_dir}/report.pdf {output_dir}/executive-summary.pptx"
-```
+**DO NOT** do report generation yourself. **DO NOT** skip this step. The assessment is NOT complete without all four report formats.
 
 After report-analyst completes, verify all files exist:
 ```bash
