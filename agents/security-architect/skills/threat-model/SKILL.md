@@ -65,13 +65,13 @@ Output a structured summary listing all components discovered, data assets, acto
 
 Produce a Mermaid flowchart Data Flow Diagram that accurately represents the architecture BEFORE any risk analysis. Do NOT apply risk colors or threat annotations — those come in Phase 7.
 
-Consult [references/mermaid-conventions.md](references/mermaid-conventions.md) for structural diagram conventions.
+Consult [references/mermaid-conventions.md](references/mermaid-conventions.md) for structural diagram conventions, **Diagram Design Principles** (visual hierarchy, information density, aesthetics), and **Rendering Configuration** (theme settings).
 
 1. Read the completed visual completeness checklist from `{output_dir}/visual-completeness-checklist.md`.
 2. Draw every process, data store, and external entity discovered in Phase 1. Group within trust boundary subgraphs. Label every data flow with protocol, data type, and sensitivity.
 3. Use **neutral styling** only — `:::neutral`, `:::external`, `:::dataStore`. Do NOT apply risk classes yet.
 4. For every applicable category in the visual completeness checklist, apply the corresponding shapes and classDefs from [references/mermaid-conventions.md](references/mermaid-conventions.md) (identity elements, secrets, control/data plane, network zones, tenant/region boundaries, data classification, encryption state, deployment pipeline, external dependencies, control indicators, out-of-scope markers).
-5. Add component metadata notes. Do NOT add threat annotation notes yet.
+5. Add component metadata in enriched node labels (Name + Tech + Security Features — see Component Metadata section in conventions). Do NOT add threat annotation data yet.
 6. Include the structural legend and validate Mermaid syntax — see Common Pitfalls in the conventions reference.
 
 Output the diagram in a fenced code block with `mermaid` language tag.
@@ -236,9 +236,9 @@ Consult [references/mermaid-conventions.md](references/mermaid-conventions.md) f
 
 3. **Apply risk color coding**: Based on Phase 6 validated findings, apply `highRisk`, `medRisk`, and `lowRisk` classDefs to components. A component's risk level is determined by the highest-severity validated threat affecting it.
 
-4. **Add threat annotation notes**: For components with validated threats, add Mermaid `note` blocks with STRIDE-LM category abbreviations, OWASP Risk Rating score (LxI=Score BAND), and top CWE IDs.
+4. **Enrich node labels with threat data**: For components with validated threats, replace the structural node label with an enriched label that includes STRIDE-LM category abbreviations, OWASP Risk Rating score (LxI=Score BAND), and top CWE IDs. Format: `Name\nTech Stack\n⚠ STRIDE · LxI=Score BAND\nTop CWEs`. See Threat Annotations section in `references/mermaid-conventions.md`.
 
-5. **Add attack path overlays**: For the top 3-5 kill chains identified in Phase 5, overlay attack paths using `~~>` wavy arrows with numbered step labels and red styling (`linkStyle N stroke:#cc0000,stroke-width:3px`).
+5. **Add attack path overlays**: For the top 3-5 kill chains identified in Phase 5, overlay attack paths using `==>` thick arrows with numbered step labels and red styling (`linkStyle N stroke:#cc0000,stroke-width:3px`). **DO NOT use `~~>` — it is not valid Mermaid syntax.**
 
 6. **Completeness check**: Cross-reference the diagram against the Phase 1 asset inventory. Every component, data store, external entity, and actor must appear. Flag and add any missing elements discovered during Phases 3-5.
 

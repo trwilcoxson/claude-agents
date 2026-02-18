@@ -1,20 +1,132 @@
 # Mermaid Diagram Conventions for Threat Models
 
 ## Contents
+- **Diagram Design Principles** — aesthetics, visual hierarchy, information density
+- **Rendering Configuration** — high-quality PNG/SVG output settings
 - Component Shapes
 - Two-Pass Diagram Approach (Pass 1 Structural, Pass 2 Risk Overlay)
 - Trust Boundaries
 - Data Flow Labels
 - Arrow Syntax Reference
 - Color Coding with classDef
-- Threat Annotations
-- Component Metadata
+- Threat Annotations (Enriched Node Labels)
+- Component Metadata (Enriched Node Labels)
 - Diagram Legends (Structural, Risk-Overlay)
 - Full Example
-- Extended Visual Categories (Identity, Secrets, Control/Data Plane, Attack Paths, Control Indicators, Data Classification, Encryption State, Network Zones, Deployment Pipeline, External Dependencies, Tenant Boundaries, Region Boundaries, Assumptions/Scope)
+- Extended Visual Categories
 - Network Zones (detailed)
 - Category Applicability Guide
 - Common Pitfalls
+
+---
+
+## Diagram Design Principles
+
+These diagrams are the visual centerpiece of the security assessment. They appear in executive presentations, web reports, and printed documents. They must be both **technically precise** and **visually compelling**.
+
+### Visual Hierarchy
+
+1. **Size signals importance**: High-risk components should have longer, more descriptive labels. External-facing components sit at the top (TD) or left (LR) — where the eye starts.
+2. **Color signals risk**: The classDef palette is carefully designed — reds draw attention to danger, greens recede. Let the color system do the communication work.
+3. **Grouping signals relationships**: Use subgraphs liberally. Components that share a trust zone, network segment, or deployment unit should be visually grouped. This creates "zones" the eye can parse quickly.
+4. **Flow direction signals data movement**: Top-to-bottom (TD) for most systems. Left-to-right (LR) only for clear pipeline architectures. Never mix directions without strong reason.
+
+### Information Density
+
+Diagrams should be **information-rich, not sparse**. A threat model diagram with 5 bare nodes and 4 unlabeled arrows is useless. Every element should carry security-relevant context:
+
+- **Node labels**: Include component name + key technology + security-relevant metadata. Use `\n` for multi-line labels.
+  ```
+  API(["API Gateway\nNode.js · Express\nJWT · Rate Limited"])
+  ```
+- **Edge labels**: Always include protocol, data type, sensitivity, and encryption state.
+  ```
+  -->|"HTTPS: auth tokens [RESTRICTED] [ENC]"|
+  ```
+- **Subgraph labels**: Include trust level, network CIDR, or data classification.
+  ```
+  subgraph PrivateSubnets["Private Subnets — 10.0.2.0/24 — Semi-Trusted"]
+  ```
+
+### Aesthetic Guidelines
+
+1. **Consistent spacing**: Keep parallel data flows at similar lengths. Avoid one edge spanning the entire diagram while another is tiny.
+2. **Minimize edge crossings**: Reorder nodes within subgraphs to reduce crossing lines. If crossings are unavoidable, the more important flow should be the straighter one.
+3. **Label readability**: Keep node labels to 2-4 lines max. Edge labels to 1 line. If more detail is needed, put it in companion metadata tables in the report.
+4. **Visual breathing room**: Don't cram 30 nodes into one subgraph. Split large zones into logical sub-zones.
+5. **Legend placement**: Put the legend in its own subgraph at the bottom. It should be complete but not dominant.
+6. **Professional feel**: These diagrams go to CISOs and board members. No sloppy layouts, no orphaned nodes, no generic labels like "Server" or "DB". Every node should be identifiable by name.
+
+### Risk Overlay Enrichment (Phase 7 Only)
+
+In the risk overlay pass, node labels should be enriched with risk summary data:
+
+```
+API(["API Gateway\nNode.js · Express\n⚠ S,T,I,E · 4×4=16 HIGH\nCWE-287, CWE-20"]):::highRisk
+```
+
+Format: `Component Name\nTech Stack\n⚠ STRIDE · LxI=Score BAND\nTop CWEs`
+
+This replaces the `note right of` syntax (which is NOT valid in flowchart mode and causes CLI rendering failures). By embedding risk data directly in the node label, the information stays visible in ALL output formats — HTML, PNG, DOCX, PDF, PPTX.
+
+---
+
+## Rendering Configuration
+
+Use the rendering config at `references/mermaid-config.json` for all Mermaid PNG/SVG output. This config provides:
+- Professional sans-serif fonts at readable sizes
+- Smooth `basis` curve for edges (not angular)
+- Generous node/rank spacing for readability
+- Semi-transparent edge label backgrounds
+- Proper padding and diagram margins
+
+### CLI Rendering Command
+
+```bash
+npx -y @mermaid-js/mermaid-cli \
+  -i {file}.mmd \
+  -o {file}.png \
+  -c /path/to/references/mermaid-config.json \
+  -w 3000 \
+  -b white \
+  --scale 2
+```
+
+**Key parameters**:
+- `-c mermaid-config.json` — applies the theme, fonts, spacing
+- `-w 3000` — 3000px wide for high-resolution output (zoomable in documents)
+- `--scale 2` — 2x pixel density for retina/print quality
+- `-b white` — clean white background
+
+### Pre-Processing Before Rendering
+
+The Mermaid CLI is stricter than mermaid.js in the browser. Before rendering to PNG, strip:
+1. `~~>` wavy arrows → replace with `==>` thick arrows + `linkStyle N stroke:#cc0000,stroke-width:3px`
+2. `note` directives → remove entirely (metadata should be in enriched node labels instead)
+3. Unescaped special characters in labels → wrap in double quotes
+4. Deeply nested subgraphs (3+ levels) → flatten where possible
+
+### HTML Rendering (mermaid.js CDN)
+
+For the HTML web report, use mermaid.js CDN with this initialization:
+```javascript
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#f5f5f5',
+    primaryTextColor: '#1a1a2e',
+    lineColor: '#4a4a6a',
+    fontSize: '15px',
+    fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    edgeLabelBackground: '#ffffffee'
+  },
+  flowchart: { useMaxWidth: false, curve: 'basis', padding: 24 },
+  securityLevel: 'loose'
+});
+```
+
+`securityLevel: 'loose'` enables click handlers for interactive features (zoom, pan, fullscreen).
 
 ## Component Shapes
 
@@ -97,15 +209,14 @@ Examples:
 | `-->` | Standard data flow (data plane) | Both passes |
 | `-.->` | Control plane / optional / async flow | Both passes |
 | `==>` | Critical/high-sensitivity flow | Risk overlay only |
-| `~~>` | Attack path (kill chain step) | Risk overlay only |
 | `-->\|"label"\|` | Labeled flow | Both passes |
 
 **Arrow semantics by pass:**
 
-- **Structural pass**: `-->` for data plane flows, `-.->` for control plane flows. Prefix labels with `[DP]` or `[CP]` to distinguish. Do not use `==>` or `~~>`.
-- **Risk overlay pass**: Add `==>` for critical flows and `~~>` for attack path visualization. Retain all structural arrows.
+- **Structural pass**: `-->` for data plane flows, `-.->` for control plane flows. Prefix labels with `[DP]` or `[CP]` to distinguish. Do not use `==>`.
+- **Risk overlay pass**: Add `==>` for critical flows. For attack paths, use `==>` with `linkStyle` red coloring (see Attack Paths section). Retain all structural arrows.
 
-Note: `==>` (thick arrow) should only be used in the risk overlay pass to highlight critical data flows identified during analysis. `~~>` (wavy arrow) is reserved for attack path visualization in the risk overlay.
+Note: `==>` (thick arrow) should only be used in the risk overlay pass to highlight critical data flows and attack paths. **DO NOT use `~~>` (wavy arrow)** — it is not valid Mermaid syntax and causes rendering failures. Use `==>` with `linkStyle` instead.
 
 ## Color Coding with classDef
 
@@ -137,27 +248,38 @@ classDef attackPath stroke:#cc0000,stroke-width:3px,color:#cc0000
 
 Key distinction: `noFindings` (grey) is used in Pass 2 for components where no threats were validated. `lowRisk` (green) is used only when analysis explicitly confirms low risk. They are semantically different even though `noFindings` shares the same visual as `neutral`.
 
-## Threat Annotations
+## Threat Annotations (Risk Overlay Only)
 
-Use Mermaid `note` blocks to annotate threats. These appear **only in the risk overlay pass (Phase 7)**.
+Embed threat data directly in enriched node labels. **DO NOT use `note right of` syntax** — it is NOT valid in flowchart diagrams and causes CLI rendering failures.
 
-```mermaid
-note right of API "STRIDE: S,T,I,E,LM\nRisk: 4x4=16 HIGH\nCWE-287, CWE-20"
-```
-
-Format: `STRIDE: [categories]\nRisk: [L]x[I]=[Score] [BAND]\n[CWE IDs]`
-
-Keep annotations concise: STRIDE-LM category abbreviations, OWASP Risk Rating likelihood x impact = score with band, and top CWE IDs.
-
-## Component Metadata
-
-Use notes to document technical context. These are factual observations and appear in **both passes**.
+**Risk-annotated node format (Phase 7 only):**
 
 ```mermaid
-note left of DB "PostgreSQL 15\nTLS in transit\nAES-256 at rest\nIAM auth"
+API(["API Gateway\nNode.js · Express\n⚠ S,T,I,E · 4×4=16 HIGH\nCWE-287, CWE-20"]):::highRisk
+Auth(["Auth Service\nGo · bcrypt · MFA\n⚠ S,E,LM · 3×4=12 HIGH\nCWE-307, CWE-522"]):::highRisk
+OrderSvc(["Order Service\nPython · Django\n⚠ T,R,I · 2×3=6 MED\nCWE-862"]):::medRisk
+NotifSvc(["Notification Svc\nNode.js"]):::noFindings
 ```
 
-Include: technology/version, authentication mechanism, encryption, rate limits (where relevant).
+Pattern: `Name\nTech · Key Security Feature\n⚠ STRIDE · LxI=Score BAND\nTop CWEs`
+
+Components with no findings keep a simpler label (name + tech only) and use `:::noFindings`.
+
+## Component Metadata (Enriched Node Labels)
+
+Embed component metadata directly in node labels using multi-line syntax. These are factual observations and appear in **both passes**. **DO NOT use `note` blocks** — they are invalid in flowchart mode.
+
+**Structural pass (Phase 2) — metadata in labels:**
+
+```mermaid
+DB[("User Database\nPostgreSQL 15\nTLS · AES-256 · IAM auth")]:::dataStore
+API(["API Gateway\nNode.js · Express\nJWT · Rate Limited 1000/min"]):::neutral
+LB(["Load Balancer\nNGINX · TLS 1.3\nNo WAF rules"]):::neutral
+```
+
+Pattern: `Name\nTech · Version\nSecurity Features`
+
+Keep to 2-3 lines max. Put detailed metadata (ports, CIDR, security group rules) in companion tables in the report, not in diagram labels.
 
 ## Diagram Legends
 
@@ -196,7 +318,7 @@ subgraph Legend
     L8{{Secrets / KMS}}:::secrets
     L9[[Security Control]]:::control
     L10["--- = Trust Boundary"]
-    L11["~~> = Attack Path"]
+    L11["==> = Attack Path (red)"]
     L12["==> = Critical Flow"]
 end
 ```
@@ -214,21 +336,21 @@ flowchart TD
     subgraph DMZ["DMZ — Untrusted"]
         style DMZ stroke:#e74c3c,stroke-width:2px,stroke-dasharray: 5 5
         %% Pass 1: use :::neutral instead of risk classes
-        CDN([CDN / WAF]):::lowRisk
-        LB([Load Balancer]):::medRisk
+        CDN(["CDN / WAF\nCloudFront · Managed Rules"]):::lowRisk
+        LB(["Load Balancer\nNGINX · TLS 1.3\n⚠ T,D · 2×3=6 MED\nCWE-295, CWE-400"]):::medRisk
     end
 
     subgraph AppTier["Application Tier — Semi-Trusted"]
         style AppTier stroke:#f39c12,stroke-width:2px,stroke-dasharray: 5 5
-        API([API Gateway]):::highRisk
-        Auth([Auth Service]):::highRisk
-        OrderSvc([Order Service]):::medRisk
-        NotifSvc([Notification Service]):::noFindings
+        API(["API Gateway\nNode.js · Express · JWT\n⚠ S,T,I,E · 4×4=16 HIGH\nCWE-287, CWE-20"]):::highRisk
+        Auth(["Auth Service\nGo · bcrypt · MFA\n⚠ S,E,LM · 3×4=12 HIGH\nCWE-307, CWE-522"]):::highRisk
+        OrderSvc(["Order Service\nPython · Django\n⚠ T,R,I · 2×3=6 MED\nCWE-862, CWE-352"]):::medRisk
+        NotifSvc(["Notification Svc\nNode.js"]):::noFindings
     end
 
     subgraph DataTier["Data Tier — Trusted"]
         style DataTier stroke:#27ae60,stroke-width:2px,stroke-dasharray: 5 5
-        UserDB[(User DB)]:::highRisk
+        UserDB[("User DB\nPostgreSQL 15\nTLS · AES-256 · IAM\n⚠ T,I,D · 3×3=9 MED\nCWE-89, CWE-311")]:::highRisk
         OrderDB[(Order DB)]:::medRisk
         Cache[(Redis Cache)]:::medRisk
         Queue[(Message Queue)]:::noFindings
@@ -249,21 +371,6 @@ flowchart TD
     OrderSvc ==>|"HTTPS: payment requests [RESTRICTED]"| ThirdParty
     ThirdParty -->|"HTTPS: payment confirmations [CONFIDENTIAL]"| OrderSvc
 
-    %% Component metadata notes appear in BOTH passes
-    note right of API "Node.js Express\nJWT validation\nRate limited: 1000/min\nOWASP headers"
-    note right of Auth "Go service\nmTLS internal\nbcrypt passwords\nMFA supported"
-    note left of UserDB "PostgreSQL 15\nTLS in transit\nAES-256 at rest\nIAM auth\nDaily backups"
-    note right of LB "NGINX\nTLS 1.3 termination\nNo WAF rules"
-
-    %% Pass 1: omit all threat annotation notes below
-    note right of API "STRIDE: S,T,I,E\nRisk: 4x4=16 HIGH\nCWE-287, CWE-20"
-    note right of Auth "STRIDE: S,E,LM\nRisk: 3x4=12 HIGH\nCWE-307, CWE-522"
-    note left of UserDB "STRIDE: T,I,D\nRisk: 3x3=9 MEDIUM\nCWE-89, CWE-311"
-    note right of LB "STRIDE: T,D\nRisk: 2x3=6 MEDIUM\nCWE-295, CWE-400"
-    note right of OrderSvc "STRIDE: T,R,I\nRisk: 2x3=6 MEDIUM\nCWE-862, CWE-352"
-
-    note bottom of Legend "Grey (No Findings) = no validated threats identified.\nThis does NOT mean confirmed safe."
-
     %% Pass 1: use structural legend instead (External, Process:::neutral, Data Store, Trust Boundary, Sensitivity)
     subgraph Legend
         style Legend fill:#f8f9fa,stroke:#dee2e6
@@ -271,9 +378,10 @@ flowchart TD
         L2([High Risk]):::highRisk
         L3([Medium Risk]):::medRisk
         L4([Low Risk]):::lowRisk
-        L5([No Findings]):::noFindings
+        L5([No Findings — not confirmed safe]):::noFindings
         L6[(Data Store)]:::dataStore
         L7["--- = Trust Boundary"]
+        L8["==> = Critical / Attack Path"]
     end
 
     %% Pass 1: use neutral/external/dataStore classDefs only
@@ -348,16 +456,16 @@ Kubelet -.->|"[CP] HTTPS: health checks [INTERNAL]"| Pod
 
 Visualize kill chain steps and validated attack paths in the risk overlay diagram using wavy red arrows.
 
-**Mermaid syntax**: `~~>` wavy arrows or `==>` thick arrows styled with `:::attackPath`. Use numbered labels to show attack sequence.
+**Mermaid syntax**: `==>` thick arrows with `linkStyle N stroke:#cc0000,stroke-width:3px` for red coloring. Use numbered labels to show attack sequence. **DO NOT use `~~>` — it is not valid Mermaid syntax.**
 
 **When to use**: Risk overlay only (Phase 7). After Phase 5 (False Negative Hunting) identifies complete kill chains, overlay them on the diagram to show how an attacker moves from initial access to objective. This visually communicates the blast radius of a compromise.
 
 ```mermaid
 %% Attack path overlay — risk overlay pass only
 Attacker[Threat Actor]:::external
-Attacker ~~>|"1. Exploit CVE in LB"| LB([Load Balancer]):::highRisk
-LB ~~>|"2. Pivot to API via SSRF"| API([API Gateway]):::highRisk
-API ~~>|"3. Escalate via IDOR"| UserDB[(User DB)]:::highRisk
+Attacker ==>|"1. Exploit CVE in LB"| LB([Load Balancer]):::highRisk
+LB ==>|"2. Pivot to API via SSRF"| API([API Gateway]):::highRisk
+API ==>|"3. Escalate via IDOR"| UserDB[(User DB)]:::highRisk
 
 linkStyle 0 stroke:#cc0000,stroke-width:3px
 linkStyle 1 stroke:#cc0000,stroke-width:3px
@@ -563,13 +671,11 @@ Represent out-of-scope components, assumed-secure boundaries, and documented ass
 **When to use**: Any assessment with defined scope boundaries. Making assumptions and exclusions visible prevents misunderstandings about what was assessed. Out-of-scope components that interact with in-scope components should still appear (greyed out) to show integration points.
 
 ```mermaid
-CDNProvider[CDN Provider — out of scope]:::outOfScope
-ISP[ISP Network — assumed secure]:::outOfScope
+CDNProvider["CDN Provider\n(out of scope)\nManaged · SOC 2 Type II"]:::outOfScope
+ISP["ISP Network\n(assumed secure)"]:::outOfScope
 
 User[End User]:::external -->|"HTTPS"| CDNProvider
 CDNProvider -->|"HTTPS"| LB([Load Balancer]):::neutral
-
-note right of CDNProvider "OUT OF SCOPE\nManaged by vendor\nSOC 2 Type II attested"
 ```
 
 ## Network Zones
@@ -630,6 +736,6 @@ Legend: ✓ = typically applicable, ○ = sometimes applicable, — = rarely app
 
 5. **Flow direction**: Use `flowchart TD` (top-down) for most diagrams. Use `flowchart LR` (left-right) only when the system has a clear linear pipeline flow.
 
-6. **Long labels**: Keep node labels short (2-4 words). Put details in notes rather than cramming them into the node label.
+6. **Long labels**: Keep enriched node labels to 2-4 lines max. Put extended details in companion tables in the report rather than cramming them into the diagram.
 
 7. **Arrow syntax**: Use `-->` for standard flow, `-.->` for optional/async flow, `==>` for critical/high-sensitivity flow (risk overlay only). Be consistent throughout each pass.

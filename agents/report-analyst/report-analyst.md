@@ -500,20 +500,37 @@ XIV. APPENDICES
 
 **You have Bash access — use it to render diagrams directly.**
 
+**IMPORTANT**: Read the diagram conventions at `~/.claude/skills/threat-model/references/mermaid-conventions.md` — specifically the **Rendering Configuration** section and the **Diagram Design Principles** section. The rendering config at `~/.claude/skills/threat-model/references/mermaid-config.json` provides the professional theme (fonts, spacing, curves) that makes diagrams look polished.
+
 1. **Extract Mermaid code** from phase files:
    - From `02-structural-diagram.md`: extract the Mermaid code block → save as `{output_dir}/structural-diagram.mmd`
    - From `07-final-diagram.md`: extract the Mermaid code block → save as `{output_dir}/risk-overlay-diagram.mmd`
 
 2. **Pre-process .mmd files before rendering**: Strip elements that cause rendering failures:
-   - Remove `~~>` wavy arrows (not valid in standard Mermaid flowcharts) — replace with comments
-   - Remove `note` directives (not valid in flowchart mode)
-   - Ensure no unescaped special characters in labels
+   - Replace `~~>` wavy arrows with `==>` thick arrows (not valid in standard Mermaid flowcharts)
+   - Remove `note` directives (not valid in flowchart mode — metadata should already be in enriched node labels)
+   - Ensure no unescaped special characters in labels (wrap in double quotes)
 
-3. **Render to PNG** using the Mermaid CLI (**DO NOT use `mmdc` as a subcommand** — the CLI is invoked directly):
+3. **Render to high-quality PNG** using the Mermaid CLI with the rendering config (**DO NOT use `mmdc` as a subcommand** — the CLI is invoked directly):
    ```bash
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/structural-diagram.mmd -o {output_dir}/structural-diagram.png -w 2000 -b white
-   npx -y @mermaid-js/mermaid-cli -i {output_dir}/risk-overlay-diagram.mmd -o {output_dir}/risk-overlay-diagram.png -w 2000 -b white
+   npx -y @mermaid-js/mermaid-cli \
+     -i {output_dir}/structural-diagram.mmd \
+     -o {output_dir}/structural-diagram.png \
+     -c ~/.claude/skills/threat-model/references/mermaid-config.json \
+     -w 3000 --scale 2 -b white
+
+   npx -y @mermaid-js/mermaid-cli \
+     -i {output_dir}/risk-overlay-diagram.mmd \
+     -o {output_dir}/risk-overlay-diagram.png \
+     -c ~/.claude/skills/threat-model/references/mermaid-config.json \
+     -w 3000 --scale 2 -b white
    ```
+
+   **Key rendering parameters**:
+   - `-c mermaid-config.json` — applies professional theme (sans-serif fonts, smooth curves, generous spacing)
+   - `-w 3000` — 3000px wide for high-resolution output (zoomable in all document formats)
+   - `--scale 2` — 2x pixel density for retina/print quality
+   - `-b white` — clean white background
 
 4. **Verify PNGs exist and are non-empty** (must be >100 bytes — 67 bytes means placeholder):
    ```bash
@@ -523,10 +540,10 @@ XIV. APPENDICES
    ```
 
 5. **If rendering fails**: Check for Mermaid syntax errors in the `.mmd` files. Common issues:
-   - `~~>` wavy arrows (not valid — use `==>` thick arrows or comments instead)
-   - `note` directives (not valid in flowchart — remove or use comments)
+   - `~~>` wavy arrows (not valid — replace with `==>` + `linkStyle N stroke:#cc0000`)
+   - `note` directives (not valid in flowchart — remove entirely)
    - Unescaped special characters in labels (quotes, brackets)
-   - Subgraph nesting depth exceeding renderer limits
+   - Subgraph nesting depth exceeding renderer limits (flatten 3+ levels)
    Fix the `.mmd` file and retry. Do NOT proceed to Step 3 until both PNGs render successfully.
 
 ### Post-Generation Validation Checklist
@@ -568,7 +585,7 @@ Use the `frontend-design` skill to produce a single-file interactive HTML report
 
 - **Dark theme** with professional security aesthetic (not generic — use the frontend-design skill's design thinking)
 - **Navigation sidebar** with all sections linked
-- **Mermaid diagrams rendered inline** using mermaid.js CDN — both structural and risk overlay
+- **Mermaid diagrams rendered inline** using mermaid.js CDN — both structural and risk overlay. Initialize mermaid with the theme from `~/.claude/skills/threat-model/references/mermaid-config.json` (see Rendering Configuration section in `mermaid-conventions.md`)
 - **Severity badges** color-coded (CRITICAL=red, HIGH=orange, MEDIUM=yellow, LOW=green)
 - **Interactive elements**: collapsible finding details, filterable findings table, search
 - **Diagram interaction controls** — each Mermaid diagram must have:
@@ -594,10 +611,11 @@ Use the `docx` skill to produce a professional Word document at `{output_dir}/re
 - **Table of contents** (auto-generated)
 - **Professional formatting**: consistent heading styles, page numbers, headers/footers
 - **Tables** for findings, asset inventory, remediation roadmap, component metadata
-- **Diagrams as images**: Embed the PNGs rendered in Step 2.5 (`structural-diagram.png` and `risk-overlay-diagram.png`). Do NOT re-render here — use the pre-rendered files.
+- **Diagrams as full-width images**: Embed the PNGs rendered in Step 2.5 (`structural-diagram.png` and `risk-overlay-diagram.png`). Do NOT re-render here — use the pre-rendered files. **Diagram pages should use landscape orientation** for maximum readability. Set image width to full page width (landscape ~9.5in or ~24cm). The high-resolution PNGs (3000px, 2x scale) ensure diagrams remain sharp when zoomed in Word.
 - **Cross-references** maintained as readable text (e.g., "See Finding TM-004" / "See Remediation R-001")
 - **Severity color-coding** in finding headers and table cells
 - **Page breaks** between major sections
+- **Diagram captions**: Add a figure caption below each diagram identifying it (e.g., "Figure 1: Structural Architecture Diagram", "Figure 2: Risk Overlay Diagram")
 
 #### 3.3 PDF Report
 
@@ -624,8 +642,8 @@ Use the `pptx` skill to produce a leadership-ready presentation at `{output_dir}
 1. **Cover Slide**: Assessment title, target system name, date, classification level, assessor organization
 2. **Executive Summary**: Security posture rating (large badge), 2-3 sentence risk narrative, scope summary
 3. **Key Metrics**: Doughnut chart showing finding distribution by severity (`slide.addChart(pptxgen.charts.DOUGHNUT, ...)`). Include total finding count, components assessed, data flows mapped.
-4. **Architecture Overview**: Embed structural diagram PNG (`slide.addImage({path: '{output_dir}/structural-diagram.png'})`). Add caption with component count and trust boundary count.
-5. **Risk Heatmap**: Embed risk overlay diagram PNG (`slide.addImage({path: '{output_dir}/risk-overlay-diagram.png'})`). Add caption highlighting highest-risk components.
+4. **Architecture Overview**: Embed structural diagram PNG at full slide width (`slide.addImage({path: '{output_dir}/structural-diagram.png', x: 0.3, y: 1.2, w: 9.4, h: 5.5, sizing: {type: 'contain'}})`). Add caption with component count and trust boundary count. The 3000px high-res PNG ensures the diagram is sharp even when projected.
+5. **Risk Heatmap**: Embed risk overlay diagram PNG at full slide width (`slide.addImage({path: '{output_dir}/risk-overlay-diagram.png', x: 0.3, y: 1.2, w: 9.4, h: 5.5, sizing: {type: 'contain'}})`). Add caption highlighting highest-risk components.
 6. **Critical & High Findings**: Table or card layout showing top 5-8 findings (ID, title, severity, affected component, business impact). Use severity-colored backgrounds.
 7. **Remediation Roadmap**: Timeline or wave visualization showing the 4 remediation waves. Highlight quick wins. Use arrows or connectors for dependencies.
 8. **Compliance Status** (if compliance data exists): Framework coverage bars or gauges. Skip this slide if no GRC data.
@@ -651,10 +669,10 @@ Mermaid diagrams need special handling for each format. **All PNG rendering happ
 
 | Format | Diagram Approach |
 |--------|-----------------|
-| **Web** | Render live with mermaid.js CDN (`useMaxWidth: false`). Both diagrams visible at load, then toggle with JS. Include zoom/pan/fullscreen controls. |
-| **Word** | Embed pre-rendered PNGs from Step 2.5 (`structural-diagram.png`, `risk-overlay-diagram.png`) |
-| **PDF** | Inherits from Word conversion, or embed PNGs from Step 2.5 with ReportLab |
-| **PPTX** | Embed pre-rendered PNGs from Step 2.5 via `slide.addImage({path: ...})` |
+| **Web** | Render live with mermaid.js CDN using theme from `mermaid-config.json` (`useMaxWidth: false`, `securityLevel: 'loose'`). Both diagrams visible at load, then toggle with JS. Include zoom/pan/fullscreen controls per diagram. Diagrams are interactive and zoomable natively. |
+| **Word** | Embed pre-rendered PNGs from Step 2.5 on **landscape-oriented pages** at full page width (~9.5in). The 3000px/2x-scale PNGs ensure diagrams stay sharp when users zoom in Word. Add figure captions below each diagram. |
+| **PDF** | Inherits from Word conversion (landscape pages preserved), or embed PNGs from Step 2.5 with ReportLab using landscape page size for diagram pages. |
+| **PPTX** | Embed pre-rendered PNGs from Step 2.5 via `slide.addImage()` at full slide width with `contain` sizing. The high-res PNGs ensure diagrams are sharp on projector/screen. |
 
 PNG files are rendered in **Step 2.5** and saved as:
 - `{output_dir}/structural-diagram.png` — from `02-structural-diagram.md`
